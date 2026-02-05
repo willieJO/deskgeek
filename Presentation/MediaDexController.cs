@@ -61,7 +61,6 @@ namespace APIFinancia.Presentation
 
             byte[] bytes = System.IO.File.ReadAllBytes(caminhoLocal);
 
-            // Apaga o arquivo temporário depois de ler
             try { System.IO.File.Delete(caminhoLocal); } catch { }
 
             var contentType = "image/jpeg";

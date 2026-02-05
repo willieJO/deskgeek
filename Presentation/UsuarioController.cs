@@ -89,11 +89,10 @@ namespace APIFinancia.Presentation
 
                 var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
 
-                // Adiciona o token como cookie HTTP-only
                 Response.Cookies.Append("AuthToken", tokenString, new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = true, // true em produção (HTTPS)
+                    Secure = true, 
                     SameSite = SameSiteMode.Strict,
                     Expires = DateTime.UtcNow.AddDays(7)
                 });
