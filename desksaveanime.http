@@ -1,0 +1,6 @@
+@desksaveanime_HostAddress = http://localhost:5077
+
+GET {{desksaveanime_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

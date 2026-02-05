@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url('data:image/svg+xml;utf8,<svg fill="%23666" height="20" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>'); /* cinza escuro */
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1em;
+  padding-right: 2.5rem;
+  transition: background-image 0.3s ease;
+}
+
+select:hover {
+  background-image: url('data:image/svg+xml;utf8,<svg fill="%23A855F7" height="20" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>'); /* roxo */
+}
+
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+
+.react-datepicker {
+  background-color: #121212; /* preto escuro */
+  border: 1px solid #7c3aed; /* roxo bg-purple-600 */
+  color: #eee;
+  font-family: 'Arial', sans-serif;
+}
+
+.react-datepicker__header {
+  background-color: #7c3aed; /* roxo bg-purple-600 */
+  border-bottom: none;
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name {
+  color: #eee;
+}
+
+.react-datepicker__day {
+  color: #eee;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #7c3aed; /* roxo bg-purple-600 */
+  color: #fff;
+  border-radius: 0.3rem;
+}
+
+.react-datepicker__day:hover {
+  background-color: #5b21b6; /* roxo bg-purple-800 (mais escuro no hover) */
+  color: #fff;
+}
+.react-datepicker__day:hover {
+  background-color: #c4b5fd !important; /* bg-purple-200 */
+  color: #000 !important; /* texto preto para contraste */
+}

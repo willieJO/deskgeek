@@ -1,0 +1,51 @@
+.fc {
+  background-color: #1e1e1e;
+  color: white;
+  border-radius: 12px;
+  padding: 1rem;
+}
+.fc-col-header-cell-cushion {
+    color:#a855f7;
+}
+.fc-daygrid-day-number {
+    color:#a855f7 !important;
+}
+.fc-col-header-cell > .fc-scrollgrid-sync-inner{
+    background-color: #1e1e1e;
+}
+
+.fc-daygrid-day-number {
+  color: #ccc;
+}
+
+.fc-daygrid-event {
+  background-color: #a855f7 !important;
+  border: none;
+  border-radius: 6px;
+  padding: 2px 4px;
+  font-size: 0.8rem;
+}
+
+.fc-toolbar-title {
+  font-size: 1.25rem;
+  color: white;
+}
+
+.fc-button {
+  background-color: #a855f7 !important;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.7rem;
+  font-weight: bold;
+}
+
+.fc-button:hover {
+  background-color: #9333ea !important;
+}
+
+.fc-event-main {
+  white-space: normal !important; /* permite quebra de linha */
+  word-break: break-word;         /* quebra palavra longa */
+  overflow-wrap: anywhere;        /* quebra onde precisar */
+  max-width: 100%;                /* limita a largura */
+}
