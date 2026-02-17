@@ -100,7 +100,7 @@ namespace deskgeek.Presentation
         }
         [HttpPut("{guild}")]
         [Authorize]
-        public async Task<IActionResult> EditarMedia(Guid guild, [FromForm] EditMediaCommand command)
+        public async Task<IActionResult> EditarMedia(Guid guild, [FromBody] EditMediaCommand command)
         {
             try
             {

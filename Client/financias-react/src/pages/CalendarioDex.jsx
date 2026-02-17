@@ -31,7 +31,7 @@ export default function CalendarioDex() {
         const response = await api.get("/MediaDex/obterMediaPorUsuario", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await response.data;
+        const data = await response.data.filter(item => item.status != "Finalizado" && item.status != "Cancelado" && item.diaNovoCapitulo != null); // Filtra só os que têm dia de lançamento
 
         // Mapear para formato FullCalendar
         const eventosFullCalendar = data.map(item => {
