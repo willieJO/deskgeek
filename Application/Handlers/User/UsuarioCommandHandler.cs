@@ -1,11 +1,11 @@
-﻿using APIFinancia.Application.Commands;
-using APIFinancia.Application.Notification;
-using APIFinancia.Domain;
-using APIFinancia.Repository;
-using APIFinancia.Shared;
+﻿using deskgeek.Application.Commands;
+using deskgeek.Application.Notification;
+using deskgeek.Domain;
+using deskgeek.Repository;
+using deskgeek.Shared;
 using MediatR;
 
-namespace APIFinancia.Application.Handlers
+namespace deskgeek.Application.Handlers
 {
     public class UsuarioCommandHandler : IRequestHandler<UsuarioCommand, Guid>
     {

@@ -1,4 +1,4 @@
-﻿using APIFinancia.Shared;
+﻿using deskgeek.Shared;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json.Linq;
 using System.Data;
@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Security;
 
-namespace APIFinancia.Infra
+namespace deskgeek.Infra
 {
     public class ADOContext : IDisposable
     {

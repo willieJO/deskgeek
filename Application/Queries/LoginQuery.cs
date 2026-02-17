@@ -1,6 +1,6 @@
 ﻿using MediatR;
 
-namespace APIFinancia.Application.Queries
+namespace deskgeek.Application.Queries
 {
     public class LoginQuery : IRequest<string>
     {

@@ -1,4 +1,4 @@
-﻿namespace APIFinancia.Domain
+﻿namespace deskgeek.Domain
 {
     public class User
     {

@@ -1,6 +1,6 @@
 ﻿using MediatR;
 
-namespace APIFinancia.Application.Notification
+namespace deskgeek.Application.Notification
 {
     public class UserCriadaNotification : INotification
     {

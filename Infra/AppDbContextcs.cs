@@ -1,7 +1,7 @@
-﻿using APIFinancia.Domain;
+﻿using deskgeek.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace APIFinancia.Infra
+namespace deskgeek.Infra
 {
     public class AppDbContext : DbContext
     {

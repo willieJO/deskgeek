@@ -1,7 +1,7 @@
-﻿using APIFinancia.Application.Notification;
+﻿using deskgeek.Application.Notification;
 using MediatR;
 
-namespace APIFinancia.Application.LogEvent
+namespace deskgeek.Application.LogEvent
 {
     public class LogEventUsuarioHandler : INotificationHandler<UserCriadaNotification>
     {

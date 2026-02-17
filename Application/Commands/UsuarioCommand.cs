@@ -1,6 +1,6 @@
 ﻿using MediatR;
 
-namespace APIFinancia.Application.Commands
+namespace deskgeek.Application.Commands
 {
     public class UsuarioCommand : IRequest<Guid>
     {

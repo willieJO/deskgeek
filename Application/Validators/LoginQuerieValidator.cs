@@ -1,8 +1,8 @@
-﻿using APIFinancia.Application.Commands;
-using APIFinancia.Application.Queries;
+﻿using deskgeek.Application.Commands;
+using deskgeek.Application.Queries;
 using FluentValidation;
 
-namespace APIFinancia.Application.Validators
+namespace deskgeek.Application.Validators
 {
     public class LoginQuerieValidator : AbstractValidator<LoginQuery>
     {

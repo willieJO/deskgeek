@@ -1,11 +1,11 @@
-﻿using APIFinancia.Application.Queries;
-using APIFinancia.Domain;
-using APIFinancia.Infra;
-using APIFinancia.Shared;
+﻿using deskgeek.Application.Queries;
+using deskgeek.Domain;
+using deskgeek.Infra;
+using deskgeek.Shared;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace APIFinancia.Repository
+namespace deskgeek.Repository
 {
     public class MediaRepository
     {

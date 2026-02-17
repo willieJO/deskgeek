@@ -1,6 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 
-namespace APIFinancia.Shared
+namespace deskgeek.Shared
 {
     public static class ADOHelper
     {

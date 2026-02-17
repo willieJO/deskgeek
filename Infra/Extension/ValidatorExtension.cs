@@ -1,7 +1,7 @@
-﻿using APIFinancia.Application.Validators;
+﻿using deskgeek.Application.Validators;
 using FluentValidation;
 
-namespace APIFinancia.Infra.Extension
+namespace deskgeek.Infra.Extension
 {
     public static class ValidatorExtension
     {

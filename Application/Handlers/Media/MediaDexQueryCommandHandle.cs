@@ -1,11 +1,11 @@
-﻿using APIFinancia.Application.Commands;
-using APIFinancia.Domain;
-using APIFinancia.Repository;
+﻿using deskgeek.Application.Commands;
+using deskgeek.Domain;
+using deskgeek.Repository;
 using AutoMapper;
-using desksaveanime.Application.Queries;
+using deskgeek.Application.Queries;
 using MediatR;
 
-namespace desksaveanime.Application.Handlers.Media
+namespace deskgeek.Application.Handlers.Media
 {
     public class MediaDexQueryCommandHandle : IRequestHandler<MediaDexQuery, List<MediaDex>>
     {

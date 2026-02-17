@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace APIFinancia.Domain
+namespace deskgeek.Domain
 {
     public class MediaDex
     {

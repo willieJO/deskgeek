@@ -1,7 +1,7 @@
-﻿using APIFinancia.Domain;
+﻿using deskgeek.Domain;
 using MediatR;
 
-namespace desksaveanime.Application.Queries
+namespace deskgeek.Application.Queries
 {
     public class MediaDexQuery : IRequest<List<MediaDex>>
     {

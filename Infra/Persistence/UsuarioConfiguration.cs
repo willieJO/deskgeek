@@ -1,8 +1,8 @@
-﻿using APIFinancia.Domain;
+﻿using deskgeek.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace APIFinancia.Infra.Persistence
+namespace deskgeek.Infra.Persistence
 {
     public class UsuarioConfiguration : IEntityTypeConfiguration<User>
     {

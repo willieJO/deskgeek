@@ -1,7 +1,7 @@
-﻿using APIFinancia.Application.Queries;
-using APIFinancia.Domain;
+﻿using deskgeek.Application.Queries;
+using deskgeek.Domain;
 
-namespace APIFinancia.Repository
+namespace deskgeek.Repository
 {
     public interface IUsuarioRepository
     {

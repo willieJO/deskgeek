@@ -1,14 +1,14 @@
-﻿using APIFinancia.Application.Commands;
-using desksaveanime.Application.Commands;
-using desksaveanime.Application.Queries;
-using desksaveanime.Shared;
+﻿using deskgeek.Application.Commands;
+using deskgeek.Application.Commands;
+using deskgeek.Application.Queries;
+using deskgeek.Shared;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace APIFinancia.Presentation
+namespace deskgeek.Presentation
 {
     [Route("api/[controller]")]
     [ApiController]
