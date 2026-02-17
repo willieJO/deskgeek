@@ -1,7 +1,7 @@
-﻿using APIFinancia.Domain;
+﻿using deskgeek.Domain;
 using MediatR;
 
-namespace APIFinancia.Application.Queries
+namespace deskgeek.Application.Queries
 {
     public class UsuarioByIdQuery : IRequest<User>
     {

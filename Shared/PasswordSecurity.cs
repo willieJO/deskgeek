@@ -1,6 +1,6 @@
 ﻿using System.Security.Cryptography;
 
-namespace APIFinancia.Shared
+namespace deskgeek.Shared
 {
     public static class PasswordExtensions
     {

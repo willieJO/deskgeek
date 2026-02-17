@@ -1,4 +1,4 @@
-﻿namespace APIFinancia.Shared
+﻿namespace deskgeek.Shared
 {
     public static class ConformitySettings
     {

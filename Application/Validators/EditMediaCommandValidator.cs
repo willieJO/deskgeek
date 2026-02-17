@@ -1,8 +1,8 @@
-﻿using APIFinancia.Application.Commands;
-using desksaveanime.Application.Commands;
+﻿using deskgeek.Application.Commands;
+using deskgeek.Application.Commands;
 using FluentValidation;
 
-namespace desksaveanime.Application.Validators
+namespace deskgeek.Application.Validators
 {
     public class EditMediaCommandValidator : AbstractValidator<EditMediaCommand>
     {

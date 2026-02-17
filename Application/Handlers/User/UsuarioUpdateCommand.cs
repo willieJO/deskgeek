@@ -1,10 +1,10 @@
-﻿using APIFinancia.Application.Commands;
-using APIFinancia.Domain;
-using APIFinancia.Repository;
-using APIFinancia.Shared;
+﻿using deskgeek.Application.Commands;
+using deskgeek.Domain;
+using deskgeek.Repository;
+using deskgeek.Shared;
 using MediatR;
 
-namespace APIFinancia.Application.Handlers.Usuario
+namespace deskgeek.Application.Handlers.Usuario
 {
     public class UsuarioUpdateCommand : IRequestHandler<UpdateUsuarioCommand, Guid>
     {

@@ -1,8 +1,8 @@
-﻿using APIFinancia.Application.Commands;
-using APIFinancia.Repository;
+﻿using deskgeek.Application.Commands;
+using deskgeek.Repository;
 using FluentValidation;
 
-namespace APIFinancia.Application.Validators
+namespace deskgeek.Application.Validators
 {
     public class UsuarioCommandValidator : AbstractValidator<UsuarioCommand>
     {

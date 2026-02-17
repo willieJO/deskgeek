@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace desksaveanime.Migrations
+namespace deskgeek.Migrations
 {
     /// <inheritdoc />
     public partial class MangaDex2 : Migration

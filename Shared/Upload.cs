@@ -1,9 +1,9 @@
-﻿using desksaveanime.Domain;
+﻿using deskgeek.Domain;
 using Microsoft.Extensions.Options;
 using Renci.SshNet;
 using System.Diagnostics;
 
-namespace desksaveanime.Shared
+namespace deskgeek.Shared
 {
     public class UploadService
     {

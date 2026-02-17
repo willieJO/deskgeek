@@ -1,6 +1,6 @@
-﻿using APIFinancia.Application.Commands;
-using APIFinancia.Application.Handlers;
-using APIFinancia.Application.Queries;
+﻿using deskgeek.Application.Commands;
+using deskgeek.Application.Handlers;
+using deskgeek.Application.Queries;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication;
@@ -12,7 +12,7 @@ using System.Security.Claims;
 using System.Text;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
-namespace APIFinancia.Presentation
+namespace deskgeek.Presentation
 {
     [Route("api/[controller]")]
     [ApiController]

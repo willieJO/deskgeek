@@ -1,4 +1,4 @@
-﻿namespace desksaveanime.Domain
+﻿namespace deskgeek.Domain
 {
     public class SshSettings
     {

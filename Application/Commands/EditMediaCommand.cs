@@ -1,6 +1,6 @@
 ﻿using MediatR;
 
-namespace desksaveanime.Application.Commands
+namespace deskgeek.Application.Commands
 {
     public class EditMediaCommand : IRequest<Guid?>
     {

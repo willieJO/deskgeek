@@ -1,7 +1,7 @@
 ﻿using MediatR;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace APIFinancia.Application.Commands
+namespace deskgeek.Application.Commands
 {
     public class CreateMediaCommand : IRequest<Guid?>
     {

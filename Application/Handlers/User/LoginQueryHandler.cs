@@ -1,11 +1,11 @@
-﻿using APIFinancia.Application.Queries;
-using APIFinancia.Domain;
-using APIFinancia.Repository;
-using APIFinancia.Shared;
+﻿using deskgeek.Application.Queries;
+using deskgeek.Domain;
+using deskgeek.Repository;
+using deskgeek.Shared;
 using MediatR;
 using Newtonsoft.Json.Linq;
 
-namespace APIFinancia.Application.Handlers.User
+namespace deskgeek.Application.Handlers.User
 {
     public class LoginQueryHandler : IRequestHandler<LoginQuery, string>
     {

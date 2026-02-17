@@ -1,9 +1,9 @@
-﻿using APIFinancia.Application.Queries;
-using APIFinancia.Domain;
-using APIFinancia.Repository;
+﻿using deskgeek.Application.Queries;
+using deskgeek.Domain;
+using deskgeek.Repository;
 using MediatR;
 
-namespace APIFinancia.Application.Handlers.Usuario
+namespace deskgeek.Application.Handlers.Usuario
 {
     public class UsuarioByIdQueryHandler : IRequestHandler<UsuarioByIdQuery, Domain.User>
     {

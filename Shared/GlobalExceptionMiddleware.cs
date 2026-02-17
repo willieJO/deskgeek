@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
-namespace APIFinancia.Shared
+namespace deskgeek.Shared
 {
     public class GlobalExceptionMiddleware
     {
