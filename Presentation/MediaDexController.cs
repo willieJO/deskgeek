@@ -100,7 +100,21 @@ namespace deskgeek.Presentation
         }
         [HttpPut("{guild}")]
         [Authorize]
-        public async Task<IActionResult> EditarMedia(Guid guild, [FromBody] EditMediaCommand command)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> EditarMediaMultipart(Guid guild, [FromForm] EditMediaCommand command)
+        {
+            return await EditarMediaInternal(guild, command);
+        }
+
+        [HttpPut("{guild}")]
+        [Authorize]
+        [Consumes("application/json", "text/json")]
+        public async Task<IActionResult> EditarMediaJson(Guid guild, [FromBody] EditMediaCommand command)
+        {
+            return await EditarMediaInternal(guild, command);
+        }
+
+        private async Task<IActionResult> EditarMediaInternal(Guid guild, EditMediaCommand command)
         {
             try
             {
