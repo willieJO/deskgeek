@@ -30,12 +30,20 @@ namespace deskgeek.Shared
 
             RunCommand(
                 "ssh",
-                $"-i \"{_ssh.PrivateKeyPath}\" {_ssh.User}@{_ssh.Host} \"mkdir -p {remoteDirectory}\""
+                $"-o StrictHostKeyChecking=no " +
+                $"-o UserKnownHostsFile=/dev/null " +
+                $"-o BatchMode=yes " +
+                $"-i \"{_ssh.PrivateKeyPath}\" {_ssh.User}@{_ssh.Host} " +
+                $"\"mkdir -p {remoteDirectory}\""
             );
 
             RunCommand(
                 "scp",
-                $"-i \"{_ssh.PrivateKeyPath}\" \"{localTempFile}\" {_ssh.User}@{_ssh.Host}:\"{remoteFilePath}\""
+                $"-o StrictHostKeyChecking=no " +
+                $"-o UserKnownHostsFile=/dev/null " +
+                $"-o BatchMode=yes " +
+                $"-i \"{_ssh.PrivateKeyPath}\" " +
+                $"\"{localTempFile}\" {_ssh.User}@{_ssh.Host}:\"{remoteFilePath}\""
             );
 
             File.Delete(localTempFile);
@@ -50,7 +58,13 @@ namespace deskgeek.Shared
 
             RunCommand(
                 "scp",
-                $"-i \"{_ssh.PrivateKeyPath}\" {_ssh.User}@{_ssh.Host}:\"{remotePath}\" \"{tempFileLocal}\""
+                $"-o StrictHostKeyChecking=no " +
+                $"-o UserKnownHostsFile=/dev/null " +
+                $"-o BatchMode=yes " +
+                $"-o ConnectTimeout=10 " +
+                $"-i \"{_ssh.PrivateKeyPath}\" " +
+                $"{_ssh.User}@{_ssh.Host}:\"{remotePath}\" " +
+                $"\"{tempFileLocal}\""
             );
 
             return File.Exists(tempFileLocal) ? tempFileLocal : null;
@@ -58,24 +72,38 @@ namespace deskgeek.Shared
 
         private static void RunCommand(string command, string args)
         {
-            using var process = new Process
+            using var process = new Process();
+
+            process.StartInfo = new ProcessStartInfo
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = command,
-                    Arguments = args,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
+                FileName = command,
+                Arguments = args,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
             };
 
             process.Start();
-            process.WaitForExit();
+
+            // Timeout de segurança (30 segundos)
+            if (!process.WaitForExit(30000))
+            {
+                process.Kill();
+                throw new Exception("Processo travou (timeout 30s).");
+            }
+
+            var output = process.StandardOutput.ReadToEnd();
+            var error = process.StandardError.ReadToEnd();
+
+            Console.WriteLine("STDOUT:");
+            Console.WriteLine(output);
+
+            Console.WriteLine("STDERR:");
+            Console.WriteLine(error);
 
             if (process.ExitCode != 0)
-                throw new Exception(process.StandardError.ReadToEnd());
+                throw new Exception($"Erro ao executar comando:\n{error}");
         }
     }
 }
