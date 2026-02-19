@@ -7,6 +7,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace deskgeek.Presentation
 {
@@ -100,17 +101,50 @@ namespace deskgeek.Presentation
         }
         [HttpPut("{guild}")]
         [Authorize]
-        [Consumes("multipart/form-data")]
-        public async Task<IActionResult> EditarMediaMultipart(Guid guild, [FromForm] EditMediaCommand command)
+        [Consumes("multipart/form-data", "application/json", "text/json")]
+        public async Task<IActionResult> EditarMedia(Guid guild)
         {
-            return await EditarMediaInternal(guild, command);
-        }
+            EditMediaCommand? command;
 
-        [HttpPut("{guild}")]
-        [Authorize]
-        [Consumes("application/json", "text/json")]
-        public async Task<IActionResult> EditarMediaJson(Guid guild, [FromBody] EditMediaCommand command)
-        {
+            if (Request.HasFormContentType)
+            {
+                var form = await Request.ReadFormAsync();
+                var imagemUrl = form["imagemUrl"].ToString();
+                if (string.IsNullOrWhiteSpace(imagemUrl))
+                {
+                    imagemUrl = form["setUrlInput"].ToString();
+                }
+
+                command = new EditMediaCommand
+                {
+                    Nome = form["nome"].ToString(),
+                    TotalCapitulos = form["totalCapitulos"].ToString(),
+                    CapituloAtual = form["capituloAtual"].ToString(),
+                    DiaNovoCapitulo = form["diaNovoCapitulo"].ToString(),
+                    Status = form["status"].ToString(),
+                    ImagemUpload = form.Files.GetFile("ImagemUpload"),
+                    ImagemDirectory = form["imagemDirectory"].ToString(),
+                    imagemUrl = string.IsNullOrWhiteSpace(imagemUrl) ? null : imagemUrl
+                };
+            }
+            else if (Request.ContentType?.Contains("json", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                command = await JsonSerializer.DeserializeAsync<EditMediaCommand>(
+                    Request.Body,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true },
+                    HttpContext.RequestAborted
+                );
+            }
+            else
+            {
+                return StatusCode(StatusCodes.Status415UnsupportedMediaType, "Tipo de conteúdo não suportado.");
+            }
+
+            if (command == null)
+            {
+                return BadRequest("Payload inválido.");
+            }
+
             return await EditarMediaInternal(guild, command);
         }
 
