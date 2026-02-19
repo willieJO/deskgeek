@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { request, gql } from "graphql-request";
 import api from "../utils/api";
 import { toast } from "react-toastify";
+
 const anilistEndpoint = "https://graphql.anilist.co";
 const mangaDexEndpoint = "https://api.mangadex.org";
 
@@ -23,6 +24,18 @@ const anilistQuery = gql`
   }
 `;
 
+const diasSemana = [
+  "Domingo",
+  "Segunda-feira",
+  "Terça-feira",
+  "Quarta-feira",
+  "Quinta-feira",
+  "Sexta-feira",
+  "Sábado",
+];
+
+const statusOptions = ["Em andamento", "Finalizado", "Inativo"];
+
 export default function MediaTracker() {
   const [tipo, setTipo] = useState("ANIME");
   const [busca, setBusca] = useState("");
@@ -40,14 +53,12 @@ export default function MediaTracker() {
   const [novoStatus, setNovoStatus] = useState("Em andamento");
   const [novoCapituloAtual, setNovoCapituloAtual] = useState("");
   const [diaNovosCapitulos, setDiaNovosCapitulos] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   async function buscarAnilist(search, type) {
     if (!search) return [];
     try {
-      const data = await request(anilistEndpoint, anilistQuery, {
-        search,
-        type,
-      });
+      const data = await request(anilistEndpoint, anilistQuery, { search, type });
       return data.Page.media;
     } catch {
       return [];
@@ -64,32 +75,26 @@ export default function MediaTracker() {
       const res = await fetch(url);
       const json = await res.json();
 
-      const manhuaList = json.data.map((item) => {
+      return json.data.map((item) => {
         const attributes = item.attributes;
         const titleObj = attributes.title;
         const titleRomaji =
           titleObj.en || Object.values(titleObj)[0] || "Título indisponível";
 
-        const coverRel = item.relationships.find(
-          (rel) => rel.type === "cover_art"
-        );
+        const coverRel = item.relationships.find((rel) => rel.type === "cover_art");
         const coverFile = coverRel?.attributes?.fileName;
         const coverUrl = coverFile
           ? `https://uploads.mangadex.org/covers/${item.id}/${coverFile}.256.jpg`
           : "";
-
-        const chapters = attributes.chapterCount || null;
 
         return {
           id: item.id,
           title: { romaji: titleRomaji },
           coverImage: { medium: coverUrl },
           episodes: null,
-          chapters,
+          chapters: attributes.chapterCount || null,
         };
       });
-
-      return manhuaList;
     } catch {
       return [];
     }
@@ -145,9 +150,32 @@ export default function MediaTracker() {
     setNovoTotalCapitulos("");
     setNovoStatus("Em andamento");
     setNovoCapituloAtual("");
+    setSelecionado(null);
+  };
+
+  const resetSearchState = () => {
+    setSelecionado(null);
+    setSugestoes([]);
+    setBusca("");
+    setCriandoNovo(false);
+    setCapituloAtual("");
+    setStatus("Em andamento");
+    setDiaNovosCapitulos("");
   };
 
   async function handleEnviar() {
+    if (!criandoNovo && !selecionado) {
+      toast.info("Escolha uma obra ou crie um novo registro.");
+      return;
+    }
+
+    if (criandoNovo && !novoTitulo.trim()) {
+      toast.info("Informe um título para continuar.");
+      return;
+    }
+
+    setIsSaving(true);
+
     const formData = new FormData();
     const nome = criandoNovo ? novoTitulo : selecionado.title.romaji;
     const totalCapitulos = criandoNovo
@@ -168,236 +196,235 @@ export default function MediaTracker() {
     formData.append("TotalCapitulos", totalCapitulos);
     formData.append("CapituloAtual", capAtualEnviar);
     formData.append("Status", statusAtual);
-    formData.append("DiaNovoCapitulo", diaNovosCapitulos)
+    formData.append("DiaNovoCapitulo", diaNovosCapitulos);
+
     if (criandoNovo && novaImagemFile) {
       formData.append("ImagemUpload", novaImagemFile);
     } else if (selecionado?.coverImage?.medium) {
       formData.append("imagemUrl", selecionado.coverImage.medium);
     }
+
     try {
       const res = await api.post("/MediaDex/criar", formData, {
-  headers: {
-    "Content-Type": "multipart/form-data",
-  },
-});
-      if (res.status == 200) {
-          toast.success("Cadastro realizado com sucesso");
-          setTimeout(() => {
-            window.location.reload();
-          }, 1500);
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (res.status === 200) {
+        toast.success("Cadastro realizado com sucesso.");
+        setTimeout(() => {
+          window.location.reload();
+        }, 900);
       } else {
-        toast.error("Erro no servidor");
+        toast.error("Erro no servidor.");
       }
-    } catch (err) {
-      toast.error("Erro no servidor");
+    } catch {
+      toast.error("Erro no servidor.");
+    } finally {
+      setIsSaving(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-[#121212] text-white flex items-center justify-center px-4">
-      <div className="bg-[#1e1e1e] border border-gray-700 rounded-xl shadow-xl p-6 w-full max-w-2xl space-y-4">
-        <h1 className="text-3xl font-bold">Acompanhar Anime/Mangá/Manhua</h1>
-        {sugestoes.length === 0 &&
-            busca.length >= 2 &&
-            !selecionado &&
-            !criandoNovo && (
-              <button
-                className="mt-2 text-purple-500 underline"
-                onClick={handleCriarNovoClick}
-              >
-                Não encontrou? Crie o seu!
-              </button>
-            )}
-        <div>
-          <label className="block mb-1 font-medium">Tipo</label>
-          <select
-            className="w-full p-3 bg-[#2c2c2c] text-white border border-gray-600 rounded"
-            value={tipo}
-            onChange={(e) => {
-              setTipo(e.target.value);
-              setSelecionado(null);
-              setSugestoes([]);
-              setBusca("");
-              setCriandoNovo(false);
-              setCapituloAtual("");
-              setStatus("Em andamento");
-            }}
-          >
-            <option value="ANIME">Anime</option>
-            <option value="MANGA">Mangá</option>
-            <option value="MANHUA">Manhua</option>
-          </select>
-        </div>
+    <div className="app-shell">
+      <div className="mx-auto w-full max-w-5xl space-y-5">
+        <section className="page-surface fade-slide-in p-5 sm:p-7">
+          <p className="section-tag">Coleção</p>
+          <h1 className="section-title">Acompanhar Anime, Mangá e Manhua</h1>
+          <p className="section-subtitle">
+            Busque uma obra e registre progresso. Se não existir, crie manualmente com
+            capa e dados personalizados.
+          </p>
 
-        <div className="relative">
-          <input
-            type="text"
-            placeholder={`Digite o nome do ${tipo.toLowerCase()}...`}
-            className="w-full p-3 bg-[#2c2c2c] text-white border border-gray-600 rounded"
-            value={busca}
-            onChange={(e) => {
-              setBusca(e.target.value);
-              setSelecionado(null);
-              setCriandoNovo(false);
-              setCapituloAtual("");
-              setStatus("Em andamento");
-            }}
-          />
-          {sugestoes.length > 0 && (
-            <ul className="absolute z-10 w-full mt-1 bg-[#2c2c2c] border border-gray-600 rounded max-h-60 overflow-y-auto">
-              {sugestoes.map((item) => (
-                <li
-                  key={item.id}
-                  onClick={() => handleSelecionar(item)}
-                  className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-purple-600"
-                >
-                  <img
-                    src={item.coverImage.medium}
-                    alt={item.title.romaji}
-                    className="w-10 h-14 object-cover rounded"
-                  />
-                  <span>{item.title.romaji}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          
-        </div>
-
-        {/* Formulário para criar novo item */}
-        {criandoNovo && (
-          <div className="space-y-4 border border-purple-600 rounded p-4 mt-4">
-            <h2 className="text-xl font-semibold">
-              Criar novo {tipo.toLowerCase()}
-            </h2>
-
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
             <div>
-              <label className="block mb-1 font-medium">Título</label>
+              <label className="ui-label">Tipo</label>
+              <select
+                className="ui-select"
+                value={tipo}
+                onChange={(e) => {
+                  setTipo(e.target.value);
+                  resetSearchState();
+                }}
+              >
+                <option value="ANIME">Anime</option>
+                <option value="MANGA">Mangá</option>
+                <option value="MANHUA">Manhua</option>
+              </select>
+            </div>
+
+            <div className="relative">
+              <label className="ui-label">Busca</label>
               <input
                 type="text"
-                className="w-full p-3 bg-[#2c2c2c] text-white border border-gray-600 rounded"
+                placeholder={`Digite o nome do ${tipo.toLowerCase()}...`}
+                className="ui-input"
+                value={busca}
+                onChange={(e) => {
+                  setBusca(e.target.value);
+                  setSelecionado(null);
+                  setCriandoNovo(false);
+                  setCapituloAtual("");
+                  setStatus("Em andamento");
+                }}
+              />
+
+              {sugestoes.length > 0 && (
+                <ul className="absolute z-20 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-slate-500/40 bg-[rgba(8,16,32,0.97)] p-1 shadow-2xl">
+                  {sugestoes.map((item) => (
+                    <li key={item.id}>
+                      <button
+                        onClick={() => handleSelecionar(item)}
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-cyan-300/15"
+                      >
+                        <img
+                          src={item.coverImage.medium}
+                          alt={item.title.romaji}
+                          className="h-14 w-10 rounded-md object-cover"
+                        />
+                        <span className="text-sm text-slate-100">{item.title.romaji}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          {sugestoes.length === 0 && busca.length >= 2 && !selecionado && !criandoNovo && (
+            <button onClick={handleCriarNovoClick} className="ui-link mt-4 text-sm" type="button">
+              Não encontrou? Clique para cadastrar manualmente.
+            </button>
+          )}
+        </section>
+
+        {criandoNovo && (
+          <section className="page-surface fade-slide-in space-y-4 border border-cyan-300/40 p-5 sm:p-6">
+            <h2 className="text-xl font-semibold text-slate-50">Novo {tipo.toLowerCase()}</h2>
+
+            <div>
+              <label className="ui-label">Título</label>
+              <input
+                type="text"
+                className="ui-input"
                 value={novoTitulo}
                 onChange={(e) => setNovoTitulo(e.target.value)}
               />
             </div>
 
             <div>
-              <label className="block mb-1 font-medium">Imagem (Enviar)</label>
-
-              {/* input escondido */}
+              <label className="ui-label">Imagem</label>
               <input
                 type="file"
                 accept="image/*"
-                onChange={handleImagemChange} 
+                onChange={handleImagemChange}
                 id="upload-image"
                 className="hidden"
               />
 
               <label
                 htmlFor="upload-image"
-                className="cursor-pointer inline-block bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded"
+                className="ui-button-secondary inline-block cursor-pointer px-4 py-2 text-sm"
               >
-                Selecionar Imagem
+                Selecionar imagem
               </label>
 
               {novaImagemPreview && (
                 <img
                   src={novaImagemPreview}
                   alt="Preview"
-                  className="mt-2 w-24 h-auto rounded border border-gray-600"
+                  className="mt-3 h-36 w-24 rounded-md border border-slate-500/40 object-cover"
                 />
               )}
             </div>
 
-            <div>
-              <label className="block mb-1 font-medium">
-                Total de capítulos (opcional)
-              </label>
-              <input
-                type="number"
-                min={0}
-                placeholder="Desconhecido"
-                className="w-full p-3 bg-[#2c2c2c] text-white border border-gray-600 rounded"
-                value={novoTotalCapitulos}
-                onChange={(e) => setNovoTotalCapitulos(e.target.value)}
-              />
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="ui-label">Total de capítulos</label>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="Desconhecido"
+                  className="ui-input"
+                  value={novoTotalCapitulos}
+                  onChange={(e) => setNovoTotalCapitulos(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="ui-label">Capítulo atual</label>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="0"
+                  className="ui-input"
+                  value={novoCapituloAtual}
+                  onChange={(e) => setNovoCapituloAtual(e.target.value)}
+                />
+              </div>
             </div>
 
-            {/* NOVO campo capítulo atual */}
-            <div>
-              <label className="block mb-1 font-medium">Capítulo atual</label>
-              <input
-                type="number"
-                min={0}
-                placeholder="0"
-                className="w-full p-3 bg-[#2c2c2c] text-white border border-gray-600 rounded"
-                value={novoCapituloAtual}
-                onChange={(e) => setNovoCapituloAtual(e.target.value)}
-              />
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="ui-label">Dia de novos capítulos</label>
+                <select
+                  className="ui-select"
+                  value={diaNovosCapitulos}
+                  onChange={(e) => setDiaNovosCapitulos(e.target.value)}
+                >
+                  <option value="">Selecione (opcional)</option>
+                  {diasSemana.map((dia) => (
+                    <option key={dia} value={dia}>
+                      {dia}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="ui-label">Status</label>
+                <select
+                  className="ui-select"
+                  value={novoStatus}
+                  onChange={(e) => setNovoStatus(e.target.value)}
+                >
+                  {statusOptions.map((statusItem) => (
+                    <option key={statusItem} value={statusItem}>
+                      {statusItem}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div>
-              <label className="block mb-1 font-medium">Dia de novos capítulos</label>
-              <select
-                className="w-full p-3 bg-[#2c2c2c] text-white border border-gray-600 rounded"
-                value={diaNovosCapitulos}
-                onChange={(e) => {
-                  setDiaNovosCapitulos(e.target.value);
-                }}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button onClick={handleEnviar} className="ui-button w-full" type="button">
+                {isSaving ? "Salvando..." : `Salvar novo ${tipo.toLowerCase()}`}
+              </button>
+              <button
+                onClick={() => setCriandoNovo(false)}
+                className="ui-button-secondary w-full"
+                type="button"
               >
-                <option value="">Selecione um dia (opcional)</option>
-                <option value="Domingo">Domingo</option>
-                <option value="Segunda-feira">Segunda-feira</option>
-                <option value="Terça-feira">Terça-feira</option>
-                <option value="Quarta-feira">Quarta-feira</option>
-                <option value="Quinta-feira">Quinta-feira</option>
-                <option value="Sexta-feira">Sexta-feira</option>
-                <option value="Sábado">Sábado</option>
-              </select>
+                Cancelar
+              </button>
             </div>
-
-            <div>
-              <label className="block mb-1 font-medium">Status</label>
-              <select
-                className="w-full p-3 bg-[#2c2c2c] text-white border border-gray-600 rounded"
-                value={novoStatus}
-                onChange={(e) => setNovoStatus(e.target.value)}
-              >
-                <option>Em andamento</option>
-                <option>Finalizado</option>
-                <option>Inativo</option>
-              </select>
-            </div>
-
-            <button
-              onClick={handleEnviar}
-              className="w-full bg-purple-600 hover:bg-purple-700 transition-colors py-3 rounded-lg font-semibold"
-            >
-              Salvar novo {tipo.toLowerCase()}
-            </button>
-
-            <button
-              onClick={() => setCriandoNovo(false)}
-              className="w-full mt-2 bg-gray-700 hover:bg-gray-800 transition-colors py-2 rounded font-semibold"
-            >
-              Cancelar
-            </button>
-          </div>
+          </section>
         )}
 
-        {/* Detalhes do selecionado */}
         {selecionado && !criandoNovo && (
-          <div className="space-y-4 mt-4">
-            <div className="flex gap-4 items-start">
+          <section className="page-surface fade-slide-in space-y-4 p-5 sm:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
               <img
                 src={selecionado.coverImage.medium}
                 alt={selecionado.title.romaji}
-                className="w-28 rounded"
+                className="h-40 w-28 rounded-lg border border-slate-500/35 object-cover"
               />
-              <div>
-                <h2 className="text-xl font-semibold">{selecionado.title.romaji}</h2>
-                <p className="text-sm text-gray-400">
+
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold text-slate-50">
+                  {selecionado.title.romaji}
+                </h2>
+                <p className="text-sm text-slate-300">
                   {tipo === "ANIME"
                     ? `Total de episódios: ${selecionado.episodes || "Desconhecido"}`
                     : `Total de capítulos: ${selecionado.chapters || "Desconhecido"}`}
@@ -405,56 +432,53 @@ export default function MediaTracker() {
               </div>
             </div>
 
-            <div>
-              <label className="block mb-1 font-medium">Capítulo atual</label>
-              <input
-                type="number"
-                className="w-full p-3 bg-[#2c2c2c] text-white border border-gray-600 rounded"
-                value={capituloAtual}
-                onChange={(e) => setCapituloAtual(e.target.value)}
-              />
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="ui-label">Capítulo atual</label>
+                <input
+                  type="number"
+                  className="ui-input"
+                  value={capituloAtual}
+                  onChange={(e) => setCapituloAtual(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="ui-label">Dia de novos capítulos</label>
+                <select
+                  className="ui-select"
+                  value={diaNovosCapitulos}
+                  onChange={(e) => setDiaNovosCapitulos(e.target.value)}
+                >
+                  <option value="">Selecione (opcional)</option>
+                  {diasSemana.map((dia) => (
+                    <option key={dia} value={dia}>
+                      {dia}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div>
-              <label className="block mb-1 font-medium">Dia de novos capítulos</label>
+              <label className="ui-label">Status</label>
               <select
-                className="w-full p-3 bg-[#2c2c2c] text-white border border-gray-600 rounded"
-                value={diaNovosCapitulos}
-                onChange={(e) => {
-                  setDiaNovosCapitulos(e.target.value);
-                }}
-              >
-                <option value="">Selecione um dia (opcional)</option>
-                <option value="Domingo">Domingo</option>
-                <option value="Segunda-feira">Segunda-feira</option>
-                <option value="Terça-feira">Terça-feira</option>
-                <option value="Quarta-feira">Quarta-feira</option>
-                <option value="Quinta-feira">Quinta-feira</option>
-                <option value="Sexta-feira">Sexta-feira</option>
-                <option value="Sábado">Sábado</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block mb-1 font-medium">Status</label>
-              <select
-                className="w-full p-3 bg-[#2c2c2c] text-white border border-gray-600 rounded"
+                className="ui-select"
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
               >
-                <option>Em andamento</option>
-                <option>Finalizado</option>
-                <option>Inativo</option>
+                {statusOptions.map((statusItem) => (
+                  <option key={statusItem} value={statusItem}>
+                    {statusItem}
+                  </option>
+                ))}
               </select>
             </div>
 
-            <button
-              onClick={handleEnviar}
-              className="w-full bg-purple-600 hover:bg-purple-700 transition-colors py-3 rounded-lg font-semibold"
-            >
-              Salvar
+            <button onClick={handleEnviar} className="ui-button w-full" type="button">
+              {isSaving ? "Salvando..." : "Salvar"}
             </button>
-          </div>
+          </section>
         )}
       </div>
     </div>
