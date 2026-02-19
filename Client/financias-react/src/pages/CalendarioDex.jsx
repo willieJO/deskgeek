@@ -1,60 +1,76 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import ptBrLocale from '@fullcalendar/core/locales/pt-br';
+import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import api from "../utils/api";
-import "./calendario.css"; // vamos customizar aqui
+import "./calendario.css";
+
 const baseURL =
   import.meta.env.MODE === "production"
     ? import.meta.env.VITE_PRODUCAO
     : import.meta.env.VITE_LOCALHOST;
+
 const diaSemanaMap = {
-  "domingo": 0,
+  domingo: 0,
   "segunda-feira": 1,
   "terca-feira": 2,
   "terça-feira": 2,
   "quarta-feira": 3,
   "quinta-feira": 4,
   "sexta-feira": 5,
-  "sabado": 6,
+  sabado: 6,
   "sábado": 6,
 };
 
+const diasPorIndice = [
+  "Domingo",
+  "Segunda-feira",
+  "Terça-feira",
+  "Quarta-feira",
+  "Quinta-feira",
+  "Sexta-feira",
+  "Sábado",
+];
+
 export default function CalendarioDex() {
   const [eventos, setEventos] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchEventos() {
+      setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const response = await api.get("/MediaDex/obterMediaPorUsuario", {
+        const response = await api.get("/MediaDex/obterMediaPorUsuarioPorStatusEmAndamento", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await response.data.filter(item => item.status != "Finalizado" && item.status != "Cancelado" && item.diaNovoCapitulo != null); // Filtra só os que têm dia de lançamento
 
-        // Mapear para formato FullCalendar
-        const eventosFullCalendar = data.map(item => {
+        const data = response.data.filter(
+          (item) =>
+            item.status === "Em andamento" &&
+            item.diaNovoCapitulo != null
+        );
+
+        const eventosFullCalendar = data.map((item) => {
           const dayIndex = diaSemanaMap[item.diaNovoCapitulo?.toLowerCase()] ?? 4;
 
-          // Monta URL da imagem só se tiver imagemDirectory (nome do arquivo no servidor)
-          // Senão usa imagemUrl ou placeholder
           let urlImagem = "https://placehold.co/50x70?text=No+Image&font=roboto";
-
           if (item.imagemDirectory) {
             urlImagem = `${baseURL}/MediaDex/imagem/${item.imagemDirectory}`;
           } else if (item.imagemUrl) {
             urlImagem = item.imagemUrl;
           }
-        
+
           return {
             id: item.id,
             title: item.nome,
             daysOfWeek: [dayIndex],
-            display: 'block',
-            color: '#a855f7',
+            display: "block",
+            classNames: ["cal-event-card"],
             extendedProps: {
               imagem: urlImagem,
+              status: item.status,
             },
           };
         });
@@ -62,50 +78,90 @@ export default function CalendarioDex() {
         setEventos(eventosFullCalendar);
       } catch (error) {
         console.error("Erro ao carregar eventos:", error);
+      } finally {
+        setLoading(false);
       }
     }
 
     fetchEventos();
   }, []);
 
-  const handleClickDia = (info) => {
-    alert(`Você clicou no dia ${info.dateStr}`);
-  };
+  const quantidadePorDia = useMemo(() => {
+    const porDia = {};
+    eventos.forEach((evento) => {
+      const diaIndex = evento.daysOfWeek?.[0];
+      const diaNome = diasPorIndice[diaIndex] || "Sem dia";
+      porDia[diaNome] = (porDia[diaNome] || 0) + 1;
+    });
+    return porDia;
+  }, [eventos]);
 
-  const eventContent = (eventInfo) => {
-    return (
-      <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
-        <img 
-          src={eventInfo.event.extendedProps.imagem} 
-          alt={eventInfo.event.title} 
-          style={{width: 30, height: 42, objectFit: 'cover', borderRadius: 4}} 
-        />
-        <span>{eventInfo.event.title}</span>
-      </div>
-    );
-  };
+  const diaMaisCheio = useMemo(() => {
+    const entradas = Object.entries(quantidadePorDia);
+    if (entradas.length === 0) return "Sem lançamentos";
+    return entradas.sort((a, b) => b[1] - a[1])[0][0];
+  }, [quantidadePorDia]);
+
+  const eventContent = (eventInfo) => (
+    <div className="cal-event-content">
+      <img
+        src={eventInfo.event.extendedProps.imagem}
+        alt={eventInfo.event.title}
+        className="cal-event-image"
+      />
+      <span className="cal-event-title">{eventInfo.event.title}</span>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-[#121212] text-white p-6">
-      <h1 className="text-3xl font-bold mb-4">Calendário de Lançamentos</h1>
-      <FullCalendar
-        plugins={[dayGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
-        events={eventos}
-        locale={ptBrLocale}
-        dateClick={handleClickDia}
-        height="auto"
-        headerToolbar={{
-          start: "prev,next today",
-          center: "title",
-          end: "",
-        }}
-        dayMaxEvents={100}
-        eventColor="#a855f7"
-        contentHeight="auto"
-        eventContent={eventContent}
-        dayCellClassNames="bg-[#1e1e1e] text-white border border-gray-700"
-      />
+    <div className="mx-auto w-full max-w-7xl space-y-5">
+      <section className="page-surface fade-slide-in p-5 sm:p-7">
+        <p className="section-tag">Lançamentos</p>
+        <h1 className="section-title">Calendário de obras</h1>
+        <p className="section-subtitle">
+          Veja rapidamente em quais dias cada capítulo novo costuma sair.
+        </p>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-3">
+        <article className="page-surface p-4">
+          <p className="text-xs uppercase tracking-[0.15em] text-slate-400">Total ativo</p>
+          <p className="mt-2 text-3xl font-extrabold text-cyan-200">{eventos.length}</p>
+          <p className="mt-1 text-sm text-slate-300">obras com dia de lançamento definido</p>
+        </article>
+
+        <article className="page-surface p-4">
+          <p className="text-xs uppercase tracking-[0.15em] text-slate-400">Dia mais cheio</p>
+          <p className="mt-2 text-2xl font-bold text-slate-100">{diaMaisCheio}</p>
+          <p className="mt-1 text-sm text-slate-300">maior concentração de novidades</p>
+        </article>
+
+        <article className="page-surface p-4">
+          <p className="text-xs uppercase tracking-[0.15em] text-slate-400">Visão mensal</p>
+          <p className="mt-2 text-2xl font-bold text-slate-100">
+            {loading ? "Carregando..." : "Atualizado"}
+          </p>
+          <p className="mt-1 text-sm text-slate-300">arraste para navegar entre meses</p>
+        </article>
+      </section>
+
+      <section className="page-surface p-3 sm:p-5">
+        <FullCalendar
+          plugins={[dayGridPlugin, interactionPlugin]}
+          initialView="dayGridMonth"
+          events={eventos}
+          locale={ptBrLocale}
+          height="auto"
+          contentHeight="auto"
+          headerToolbar={{
+            start: "prev,next today",
+            center: "title",
+            end: "",
+          }}
+          dayMaxEvents={4}
+          eventContent={eventContent}
+        />
+      </section>
     </div>
   );
 }

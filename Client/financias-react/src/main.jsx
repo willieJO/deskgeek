@@ -1,25 +1,22 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import api from "../src/utils/api";
-
-import Dashboard from "./pages/Dashboard";
-import Login from "./pages/Login";
-import Home from "./pages/Home";
-import Register from "./pages/Register";
-import AuthenticatedLayout from "./components/AuthenticatedLayout";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import AuthenticatedLayout from "./components/AuthenticatedLayout";
 import "./index.css";
 import AnimeTracker from "./pages/AnimeTracker";
-import {TabelaDex } from "./pages/TabelaDex";
 import CalendarioDex from "./pages/CalendarioDex";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import { TabelaDex } from "./pages/TabelaDex";
+import api from "./utils/api";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
 
-   useEffect(() => {
+  useEffect(() => {
     async function checkAuth() {
       try {
         const res = await api.get("/usuario/me", { withCredentials: true });
@@ -42,20 +39,32 @@ function App() {
 
   return (
     <BrowserRouter>
-      <ToastContainer position="top-right" theme="dark" />
+      <ToastContainer
+        position="top-right"
+        autoClose={2500}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        toastStyle={{
+          background: "rgba(6, 14, 28, 0.95)",
+          color: "#e5f3ff",
+          border: "1px solid rgba(148, 163, 184, 0.35)",
+          borderRadius: "12px",
+        }}
+      />
+
       <Routes>
         <Route
           path="/"
-          element={
-            isLoggedIn ? <Navigate to="/tabeladex" /> : <Navigate to="/login" />
-          }
+          element={isLoggedIn ? <Navigate to="/dashboard" /> : <Navigate to="/login" />}
         />
 
         <Route
           path="/login"
           element={
             isLoggedIn ? (
-              <Navigate to="/home" />
+              <Navigate to="/dashboard" />
             ) : (
               <Login onLogin={() => setIsLoggedIn(true)} />
             )
@@ -64,21 +73,12 @@ function App() {
 
         <Route
           path="/register"
-          element={
-            isLoggedIn ? <Navigate to="/home" /> : <Register />
-          }
+          element={isLoggedIn ? <Navigate to="/dashboard" /> : <Register />}
         />
 
-        {/* Rota protegida com layout */}
         <Route
           path="/"
-          element={
-            isLoggedIn ? (
-              <AuthenticatedLayout />
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
+          element={isLoggedIn ? <AuthenticatedLayout /> : <Navigate to="/login" />}
         >
           <Route path="dashboard" element={<AnimeTracker />} />
           <Route path="tabeladex" element={<TabelaDex />} />
