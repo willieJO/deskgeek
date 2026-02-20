@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   HiBars3,
+  HiOutlineArrowLeftOnRectangle,
   HiOutlineBookOpen,
   HiOutlineCalendarDays,
   HiOutlineChevronDoubleLeft,
   HiOutlineHomeModern,
 } from "react-icons/hi2";
+import api from "../utils/api";
 
 const menuItems = [
   {
@@ -26,14 +28,28 @@ const menuItems = [
   },
 ];
 
-export default function AuthenticatedLayout() {
+export default function AuthenticatedLayout({ onLogout }) {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const currentPage =
     menuItems.find((item) => location.pathname.startsWith(item.path))?.label ||
     "Painel";
+
+  async function handleLogout() {
+    try {
+      await api.post("/usuario/logout");
+    } catch {
+      // Mesmo com erro no backend, seguimos limpando sessão local.
+    } finally {
+      localStorage.removeItem("token");
+      setMobileOpen(false);
+      onLogout?.();
+      navigate("/login", { replace: true });
+    }
+  }
 
   return (
     <div className="app-shell text-slate-100">
@@ -45,7 +61,7 @@ export default function AuthenticatedLayout() {
       />
 
       <aside
-        className={`fixed left-0 top-0 z-40 h-screen border-r border-slate-600/35 bg-[rgba(9,18,34,0.95)] px-3 py-5 shadow-2xl backdrop-blur transition-all duration-300 ${
+        className={`fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-slate-600/35 bg-[rgba(9,18,34,0.95)] px-3 py-5 shadow-2xl backdrop-blur transition-all duration-300 ${
           sidebarExpanded ? "lg:w-72" : "lg:w-24"
         } ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
       >
@@ -79,7 +95,7 @@ export default function AuthenticatedLayout() {
           </button>
         </div>
 
-        <nav className="space-y-1">
+        <nav className="flex-1 space-y-1">
           {menuItems.map(({ label, icon, path }) => {
             const isActive = location.pathname === path;
             return (
@@ -99,6 +115,17 @@ export default function AuthenticatedLayout() {
             );
           })}
         </nav>
+
+        <button
+          onClick={handleLogout}
+          className={`mt-4 flex items-center rounded-xl border border-rose-300/35 bg-rose-300/10 px-3 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-300/20 ${
+            sidebarExpanded ? "gap-3" : "justify-center"
+          }`}
+          type="button"
+        >
+          <HiOutlineArrowLeftOnRectangle size={20} />
+          {sidebarExpanded && <span>Sair</span>}
+        </button>
       </aside>
 
       <main

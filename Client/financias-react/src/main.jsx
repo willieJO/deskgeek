@@ -78,7 +78,13 @@ function App() {
 
         <Route
           path="/"
-          element={isLoggedIn ? <AuthenticatedLayout /> : <Navigate to="/login" />}
+          element={
+            isLoggedIn ? (
+              <AuthenticatedLayout onLogout={() => setIsLoggedIn(false)} />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
         >
           <Route path="dashboard" element={<AnimeTracker />} />
           <Route path="tabeladex" element={<TabelaDex />} />
