@@ -29,6 +29,10 @@ namespace deskgeek.Application.Handlers
             try
             {
                 var objMedia = _mapper.Map<MediaDex>(request);
+                if (string.IsNullOrWhiteSpace(objMedia.TipoMidia))
+                {
+                    objMedia.TipoMidia = "Anime";
+                }
 
                 if (request.ImagemUpload != null && request.ImagemUpload.Length > 0)
                 {

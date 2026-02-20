@@ -5,6 +5,10 @@ import { toast } from "react-toastify";
 
 const anilistEndpoint = "https://graphql.anilist.co";
 const mangaDexEndpoint = "https://api.mangadex.org";
+const tvMazeEndpoint = "https://api.tvmaze.com";
+const wikipediaPtEndpoint = "https://pt.wikipedia.org/w/api.php";
+const wikipediaEnEndpoint = "https://en.wikipedia.org/w/api.php";
+const fallbackCover = "https://placehold.co/120x168?text=No+Image&font=roboto";
 
 const anilistQuery = gql`
   query ($search: String, $type: MediaType) {
@@ -36,11 +40,68 @@ const diasSemana = [
 
 const statusOptions = ["Em andamento", "Finalizado", "Inativo"];
 
+const tipoOptions = [
+  { value: "ANIME", label: "Anime" },
+  { value: "MANGA", label: "Mangá" },
+  { value: "MANHUA", label: "Manhua" },
+  { value: "SERIE", label: "Série" },
+  { value: "FILME", label: "Filme" },
+];
+
+function getTipoLabel(tipo) {
+  return tipoOptions.find((item) => item.value === tipo)?.label || "Mídia";
+}
+
+function isTipoEpisodio(tipo) {
+  return tipo === "ANIME" || tipo === "SERIE";
+}
+
+function isTipoFilme(tipo) {
+  return tipo === "FILME";
+}
+
+function getLabelsByTipo(tipo) {
+  if (isTipoEpisodio(tipo)) {
+    return {
+      totalLabel: "Total de episódios",
+      atualLabel: "Episódio atual",
+      diaLabel: "Dia de novos episódios",
+    };
+  }
+
+  if (isTipoFilme(tipo)) {
+    return {
+      totalLabel: "Total",
+      atualLabel: "",
+      diaLabel: "Dia de lançamento",
+    };
+  }
+
+  return {
+    totalLabel: "Total de capítulos",
+    atualLabel: "Capítulo atual",
+    diaLabel: "Dia de novos capítulos",
+  };
+}
+
+function toOptionalNumber(value) {
+  const raw = String(value ?? "").trim();
+  if (raw === "") return "";
+
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : "";
+}
+
+function normalizeCover(url) {
+  return url || fallbackCover;
+}
+
 export default function MediaTracker() {
   const [tipo, setTipo] = useState("ANIME");
   const [busca, setBusca] = useState("");
   const [sugestoes, setSugestoes] = useState([]);
   const [selecionado, setSelecionado] = useState(null);
+  const [ultimaSelecaoValida, setUltimaSelecaoValida] = useState(null);
 
   const [capituloAtual, setCapituloAtual] = useState("");
   const [status, setStatus] = useState("Em andamento");
@@ -59,7 +120,15 @@ export default function MediaTracker() {
     if (!search) return [];
     try {
       const data = await request(anilistEndpoint, anilistQuery, { search, type });
-      return data.Page.media;
+      return data.Page.media.map((item) => ({
+        id: item.id,
+        title: { romaji: item.title?.romaji || "Título indisponível" },
+        coverImage: { medium: normalizeCover(item.coverImage?.medium) },
+        episodes: item.episodes,
+        chapters: item.chapters,
+        total: item.episodes ?? item.chapters ?? null,
+        runtime: null,
+      }));
     } catch {
       return [];
     }
@@ -78,8 +147,7 @@ export default function MediaTracker() {
       return json.data.map((item) => {
         const attributes = item.attributes;
         const titleObj = attributes.title;
-        const titleRomaji =
-          titleObj.en || Object.values(titleObj)[0] || "Título indisponível";
+        const titleRomaji = titleObj.en || Object.values(titleObj)[0] || "Título indisponível";
 
         const coverRel = item.relationships.find((rel) => rel.type === "cover_art");
         const coverFile = coverRel?.attributes?.fileName;
@@ -90,11 +158,81 @@ export default function MediaTracker() {
         return {
           id: item.id,
           title: { romaji: titleRomaji },
-          coverImage: { medium: coverUrl },
+          coverImage: { medium: normalizeCover(coverUrl) },
           episodes: null,
           chapters: attributes.chapterCount || null,
+          total: attributes.chapterCount || null,
+          runtime: null,
         };
       });
+    } catch {
+      return [];
+    }
+  }
+
+  async function buscarSeries(search) {
+    if (!search) return [];
+    try {
+      const res = await fetch(`${tvMazeEndpoint}/search/shows?q=${encodeURIComponent(search)}`);
+      const json = await res.json();
+
+      return (json || []).slice(0, 10).map((item) => {
+        const show = item.show || {};
+        return {
+          id: show.id,
+          title: { romaji: show.name || "Série sem nome" },
+          coverImage: { medium: normalizeCover(show.image?.medium || show.image?.original) },
+          episodes: null,
+          chapters: null,
+          total: null,
+          runtime: show.averageRuntime || null,
+        };
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  async function buscarFilmes(search) {
+    if (!search) return [];
+    try {
+      const buildWikiUrl = (endpoint, term) =>
+        `${endpoint}?action=query&format=json&origin=*&generator=search&gsrsearch=${encodeURIComponent(
+          term
+        )}&gsrlimit=10&prop=pageimages|info&piprop=thumbnail&pithumbsize=300&inprop=url`;
+
+      const mapWikiPages = (json) => {
+        const pages = Object.values(json?.query?.pages || {});
+        if (!pages.length) return [];
+
+        return pages
+          .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+          .map((item) => ({
+            id: item.pageid,
+            title: { romaji: item.title || "Filme sem nome" },
+            coverImage: { medium: normalizeCover(item.thumbnail?.source || "") },
+            episodes: null,
+            chapters: null,
+            total: 1,
+            runtime: null,
+          }));
+      };
+
+      const resPt = await fetch(buildWikiUrl(wikipediaPtEndpoint, `${search} filme`));
+      const jsonPt = await resPt.json();
+      const ptResultados = mapWikiPages(jsonPt);
+      if (ptResultados.length > 0) {
+        return ptResultados;
+      }
+
+      const resEn = await fetch(buildWikiUrl(wikipediaEnEndpoint, `${search} film`));
+      const jsonEn = await resEn.json();
+      const enResultados = mapWikiPages(jsonEn);
+      if (enResultados.length > 0) {
+        return enResultados;
+      }
+
+      return [];
     } catch {
       return [];
     }
@@ -111,12 +249,21 @@ export default function MediaTracker() {
       setCriandoNovo(false);
 
       if (tipo === "MANHUA") {
-        const resultados = await buscarManhua(busca);
-        setSugestoes(resultados);
-      } else {
-        const resultados = await buscarAnilist(busca, tipo);
-        setSugestoes(resultados);
+        setSugestoes(await buscarManhua(busca));
+        return;
       }
+
+      if (tipo === "SERIE") {
+        setSugestoes(await buscarSeries(busca));
+        return;
+      }
+
+      if (tipo === "FILME") {
+        setSugestoes(await buscarFilmes(busca));
+        return;
+      }
+
+      setSugestoes(await buscarAnilist(busca, tipo));
     }, 300);
 
     return () => clearTimeout(delayDebounce);
@@ -124,6 +271,7 @@ export default function MediaTracker() {
 
   const handleSelecionar = (item) => {
     setSelecionado(item);
+    setUltimaSelecaoValida(item);
     setSugestoes([]);
     setBusca(item.title.romaji);
     setCriandoNovo(false);
@@ -147,14 +295,16 @@ export default function MediaTracker() {
     setNovoTitulo(busca);
     setNovaImagemFile(null);
     setNovaImagemPreview(null);
-    setNovoTotalCapitulos("");
+    setNovoTotalCapitulos(isTipoFilme(tipo) ? "1" : "");
     setNovoStatus("Em andamento");
     setNovoCapituloAtual("");
     setSelecionado(null);
+    setUltimaSelecaoValida(null);
   };
 
   const resetSearchState = () => {
     setSelecionado(null);
+    setUltimaSelecaoValida(null);
     setSugestoes([]);
     setBusca("");
     setCriandoNovo(false);
@@ -164,7 +314,9 @@ export default function MediaTracker() {
   };
 
   async function handleEnviar() {
-    if (!criandoNovo && !selecionado) {
+    const itemSelecionado = selecionado || ultimaSelecaoValida;
+
+    if (!criandoNovo && !itemSelecionado) {
       toast.info("Escolha uma obra ou crie um novo registro.");
       return;
     }
@@ -177,31 +329,41 @@ export default function MediaTracker() {
     setIsSaving(true);
 
     const formData = new FormData();
-    const nome = criandoNovo ? novoTitulo : selecionado.title.romaji;
-    const totalCapitulos = criandoNovo
-      ? novoTotalCapitulos
-        ? Number(novoTotalCapitulos)
-        : ""
-      : selecionado.chapters || selecionado.episodes || "";
+    const tipoLabel = getTipoLabel(tipo);
+    const fallbackTotal = isTipoFilme(tipo) ? 1 : "";
+
+    const nome = criandoNovo ? novoTitulo : itemSelecionado.title.romaji;
+
+    let totalCapitulos = fallbackTotal;
+    if (criandoNovo) {
+      const novoTotalParsed = toOptionalNumber(novoTotalCapitulos);
+      totalCapitulos = novoTotalParsed === "" ? fallbackTotal : novoTotalParsed;
+    } else {
+      const totalSelecionado =
+        itemSelecionado.total ?? itemSelecionado.chapters ?? itemSelecionado.episodes ?? fallbackTotal;
+      totalCapitulos = totalSelecionado ?? fallbackTotal;
+    }
+
     const capAtualEnviar = criandoNovo
-      ? novoCapituloAtual
-        ? Number(novoCapituloAtual)
-        : ""
-      : capituloAtual
-        ? Number(capituloAtual)
-        : "";
+      ? toOptionalNumber(novoCapituloAtual)
+      : toOptionalNumber(capituloAtual);
+
     const statusAtual = criandoNovo ? novoStatus : status;
 
     formData.append("Nome", nome);
-    formData.append("TotalCapitulos", totalCapitulos);
-    formData.append("CapituloAtual", capAtualEnviar);
+    formData.append("TipoMidia", tipoLabel);
+    formData.append("TotalCapitulos", String(totalCapitulos));
+    formData.append("CapituloAtual", capAtualEnviar === "" ? "" : String(capAtualEnviar));
     formData.append("Status", statusAtual);
-    formData.append("DiaNovoCapitulo", diaNovosCapitulos);
+    formData.append("DiaNovoCapitulo", isTipoFilme(tipo) ? "" : diaNovosCapitulos);
 
     if (criandoNovo && novaImagemFile) {
       formData.append("ImagemUpload", novaImagemFile);
-    } else if (selecionado?.coverImage?.medium) {
-      formData.append("imagemUrl", selecionado.coverImage.medium);
+    } else if (
+      itemSelecionado?.coverImage?.medium &&
+      !String(itemSelecionado.coverImage.medium).includes("placehold.co")
+    ) {
+      formData.append("imagemUrl", itemSelecionado.coverImage.medium);
     }
 
     try {
@@ -224,12 +386,15 @@ export default function MediaTracker() {
     }
   }
 
+  const labels = getLabelsByTipo(tipo);
+  const itemSelecionado = selecionado || ultimaSelecaoValida;
+
   return (
     <div className="app-shell">
       <div className="mx-auto w-full max-w-5xl space-y-5">
         <section className="page-surface fade-slide-in p-5 sm:p-7">
           <p className="section-tag">Coleção</p>
-          <h1 className="section-title">Acompanhar Anime, Mangá e Manhua</h1>
+          <h1 className="section-title">Acompanhar Anime, Mangá, Manhua, Série e Filme</h1>
           <p className="section-subtitle">
             Busque uma obra e registre progresso. Se não existir, crie manualmente com
             capa e dados personalizados.
@@ -246,9 +411,11 @@ export default function MediaTracker() {
                   resetSearchState();
                 }}
               >
-                <option value="ANIME">Anime</option>
-                <option value="MANGA">Mangá</option>
-                <option value="MANHUA">Manhua</option>
+                {tipoOptions.map((tipoItem) => (
+                  <option key={tipoItem.value} value={tipoItem.value}>
+                    {tipoItem.label}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -256,19 +423,25 @@ export default function MediaTracker() {
               <label className="ui-label">Busca</label>
               <input
                 type="text"
-                placeholder={`Digite o nome do ${tipo.toLowerCase()}...`}
+                placeholder={`Digite o nome de ${getTipoLabel(tipo).toLowerCase()}...`}
                 className="ui-input"
                 value={busca}
                 onChange={(e) => {
-                  setBusca(e.target.value);
-                  setSelecionado(null);
+                  const novoValorBusca = e.target.value;
+                  setBusca(novoValorBusca);
+
+                  if (itemSelecionado && novoValorBusca !== itemSelecionado.title.romaji) {
+                    setSelecionado(null);
+                    setUltimaSelecaoValida(null);
+                  }
+
                   setCriandoNovo(false);
                   setCapituloAtual("");
                   setStatus("Em andamento");
                 }}
               />
 
-              {sugestoes.length > 0 && (
+              {sugestoes.length > 0 && !itemSelecionado && !criandoNovo && (
                 <ul className="absolute z-20 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-slate-500/40 bg-[rgba(8,16,32,0.97)] p-1 shadow-2xl">
                   {sugestoes.map((item) => (
                     <li key={item.id}>
@@ -277,7 +450,7 @@ export default function MediaTracker() {
                         className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-cyan-300/15"
                       >
                         <img
-                          src={item.coverImage.medium}
+                          src={normalizeCover(item.coverImage?.medium)}
                           alt={item.title.romaji}
                           className="h-14 w-10 rounded-md object-cover"
                         />
@@ -290,7 +463,7 @@ export default function MediaTracker() {
             </div>
           </div>
 
-          {sugestoes.length === 0 && busca.length >= 2 && !selecionado && !criandoNovo && (
+          {sugestoes.length === 0 && busca.length >= 2 && !itemSelecionado && !criandoNovo && (
             <button onClick={handleCriarNovoClick} className="ui-link mt-4 text-sm" type="button">
               Não encontrou? Clique para cadastrar manualmente.
             </button>
@@ -299,7 +472,9 @@ export default function MediaTracker() {
 
         {criandoNovo && (
           <section className="page-surface fade-slide-in space-y-4 border border-cyan-300/40 p-5 sm:p-6">
-            <h2 className="text-xl font-semibold text-slate-50">Novo {tipo.toLowerCase()}</h2>
+            <h2 className="text-xl font-semibold text-slate-50">
+              Novo {getTipoLabel(tipo).toLowerCase()}
+            </h2>
 
             <div>
               <label className="ui-label">Título</label>
@@ -339,7 +514,7 @@ export default function MediaTracker() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="ui-label">Total de capítulos</label>
+                <label className="ui-label">{labels.totalLabel}</label>
                 <input
                   type="number"
                   min={0}
@@ -350,35 +525,39 @@ export default function MediaTracker() {
                 />
               </div>
 
-              <div>
-                <label className="ui-label">Capítulo atual</label>
-                <input
-                  type="number"
-                  min={0}
-                  placeholder="0"
-                  className="ui-input"
-                  value={novoCapituloAtual}
-                  onChange={(e) => setNovoCapituloAtual(e.target.value)}
-                />
-              </div>
+              {!isTipoFilme(tipo) && (
+                <div>
+                  <label className="ui-label">{labels.atualLabel}</label>
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="0"
+                    className="ui-input"
+                    value={novoCapituloAtual}
+                    onChange={(e) => setNovoCapituloAtual(e.target.value)}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="ui-label">Dia de novos capítulos</label>
-                <select
-                  className="ui-select"
-                  value={diaNovosCapitulos}
-                  onChange={(e) => setDiaNovosCapitulos(e.target.value)}
-                >
-                  <option value="">Selecione (opcional)</option>
-                  {diasSemana.map((dia) => (
-                    <option key={dia} value={dia}>
-                      {dia}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {!isTipoFilme(tipo) && (
+                <div>
+                  <label className="ui-label">{labels.diaLabel}</label>
+                  <select
+                    className="ui-select"
+                    value={diaNovosCapitulos}
+                    onChange={(e) => setDiaNovosCapitulos(e.target.value)}
+                  >
+                    <option value="">Selecione (opcional)</option>
+                    {diasSemana.map((dia) => (
+                      <option key={dia} value={dia}>
+                        {dia}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="ui-label">Status</label>
@@ -398,7 +577,7 @@ export default function MediaTracker() {
 
             <div className="grid gap-3 sm:grid-cols-2">
               <button onClick={handleEnviar} className="ui-button w-full" type="button">
-                {isSaving ? "Salvando..." : `Salvar novo ${tipo.toLowerCase()}`}
+                {isSaving ? "Salvando..." : `Salvar novo ${getTipoLabel(tipo).toLowerCase()}`}
               </button>
               <button
                 onClick={() => setCriandoNovo(false)}
@@ -411,53 +590,57 @@ export default function MediaTracker() {
           </section>
         )}
 
-        {selecionado && !criandoNovo && (
+        {itemSelecionado && !criandoNovo && (
           <section className="page-surface fade-slide-in space-y-4 p-5 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
               <img
-                src={selecionado.coverImage.medium}
-                alt={selecionado.title.romaji}
+                src={normalizeCover(itemSelecionado.coverImage?.medium)}
+                alt={itemSelecionado.title.romaji}
                 className="h-40 w-28 rounded-lg border border-slate-500/35 object-cover"
               />
 
               <div className="space-y-2">
-                <h2 className="text-xl font-semibold text-slate-50">
-                  {selecionado.title.romaji}
-                </h2>
+                <h2 className="text-xl font-semibold text-slate-50">{itemSelecionado.title.romaji}</h2>
                 <p className="text-sm text-slate-300">
-                  {tipo === "ANIME"
-                    ? `Total de episódios: ${selecionado.episodes || "Desconhecido"}`
-                    : `Total de capítulos: ${selecionado.chapters || "Desconhecido"}`}
+                  {isTipoEpisodio(tipo)
+                    ? `Total de episódios: ${itemSelecionado.total ?? "Desconhecido"}`
+                    : isTipoFilme(tipo)
+                      ? `Duração: ${itemSelecionado.runtime || "Desconhecida"} min`
+                      : `Total de capítulos: ${itemSelecionado.total ?? "Desconhecido"}`}
                 </p>
               </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="ui-label">Capítulo atual</label>
-                <input
-                  type="number"
-                  className="ui-input"
-                  value={capituloAtual}
-                  onChange={(e) => setCapituloAtual(e.target.value)}
-                />
-              </div>
+              {!isTipoFilme(tipo) && (
+                <div>
+                  <label className="ui-label">{labels.atualLabel}</label>
+                  <input
+                    type="number"
+                    className="ui-input"
+                    value={capituloAtual}
+                    onChange={(e) => setCapituloAtual(e.target.value)}
+                  />
+                </div>
+              )}
 
-              <div>
-                <label className="ui-label">Dia de novos capítulos</label>
-                <select
-                  className="ui-select"
-                  value={diaNovosCapitulos}
-                  onChange={(e) => setDiaNovosCapitulos(e.target.value)}
-                >
-                  <option value="">Selecione (opcional)</option>
-                  {diasSemana.map((dia) => (
-                    <option key={dia} value={dia}>
-                      {dia}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {!isTipoFilme(tipo) && (
+                <div>
+                  <label className="ui-label">{labels.diaLabel}</label>
+                  <select
+                    className="ui-select"
+                    value={diaNovosCapitulos}
+                    onChange={(e) => setDiaNovosCapitulos(e.target.value)}
+                  >
+                    <option value="">Selecione (opcional)</option>
+                    {diasSemana.map((dia) => (
+                      <option key={dia} value={dia}>
+                        {dia}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             <div>

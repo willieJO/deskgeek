@@ -122,6 +122,7 @@ namespace deskgeek.Presentation
                     CapituloAtual = form["capituloAtual"].ToString(),
                     DiaNovoCapitulo = form["diaNovoCapitulo"].ToString(),
                     Status = form["status"].ToString(),
+                    TipoMidia = form["tipoMidia"].ToString(),
                     ImagemUpload = form.Files.GetFile("ImagemUpload"),
                     ImagemDirectory = form["imagemDirectory"].ToString(),
                     imagemUrl = string.IsNullOrWhiteSpace(imagemUrl) ? null : imagemUrl
