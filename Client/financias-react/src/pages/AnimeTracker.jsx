@@ -4,7 +4,6 @@ import api from "../utils/api";
 import { toast } from "react-toastify";
 
 const anilistEndpoint = "https://graphql.anilist.co";
-const mangaDexEndpoint = "https://api.mangadex.org";
 const tvMazeEndpoint = "https://api.tvmaze.com";
 const wikipediaPtEndpoint = "https://pt.wikipedia.org/w/api.php";
 const wikipediaEnEndpoint = "https://en.wikipedia.org/w/api.php";
@@ -96,6 +95,19 @@ function normalizeCover(url) {
   return url || fallbackCover;
 }
 
+function buildMangadexCoverProxyUrl(mangaId, fileName) {
+  if (!mangaId || !fileName) return "";
+  const apiBaseUrl = String(api?.defaults?.baseURL || "").replace(/\/$/, "");
+  const mangaIdEncoded = encodeURIComponent(String(mangaId));
+  const fileNameEncoded = encodeURIComponent(String(fileName));
+
+  if (!apiBaseUrl) {
+    return `/api/MediaDex/mangadex/cover/${mangaIdEncoded}/${fileNameEncoded}`;
+  }
+
+  return `${apiBaseUrl}/MediaDex/mangadex/cover/${mangaIdEncoded}/${fileNameEncoded}`;
+}
+
 export default function MediaTracker() {
   const [tipo, setTipo] = useState("ANIME");
   const [busca, setBusca] = useState("");
@@ -137,22 +149,25 @@ export default function MediaTracker() {
   async function buscarManhua(search) {
     if (!search) return [];
     try {
-      const url = `${mangaDexEndpoint}/manga?limit=10&title=${encodeURIComponent(
-        search
-      )}&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includes[]=cover_art&availableTranslatedLanguage[]=en&order[relevance]=desc`;
+      const response = await api.get("/MediaDex/mangadex/search", {
+        params: { title: search },
+      });
+      const json = response.data;
+      const includedCoverMap = new Map(
+        (json?.included || [])
+          .filter((entry) => entry?.type === "cover_art")
+          .map((entry) => [entry.id, entry?.attributes?.fileName])
+      );
 
-      const res = await fetch(url);
-      const json = await res.json();
-
-      return json.data.map((item) => {
-        const attributes = item.attributes;
-        const titleObj = attributes.title;
+      return (json?.data || []).map((item) => {
+        const attributes = item.attributes || {};
+        const titleObj = attributes.title || {};
         const titleRomaji = titleObj.en || Object.values(titleObj)[0] || "Título indisponível";
 
-        const coverRel = item.relationships.find((rel) => rel.type === "cover_art");
-        const coverFile = coverRel?.attributes?.fileName;
+        const coverRel = (item.relationships || []).find((rel) => rel.type === "cover_art");
+        const coverFile = coverRel?.attributes?.fileName || includedCoverMap.get(coverRel?.id);
         const coverUrl = coverFile
-          ? `https://uploads.mangadex.org/covers/${item.id}/${coverFile}.256.jpg`
+          ? buildMangadexCoverProxyUrl(item.id, coverFile)
           : "";
 
         return {
@@ -453,6 +468,10 @@ export default function MediaTracker() {
                           src={normalizeCover(item.coverImage?.medium)}
                           alt={item.title.romaji}
                           className="h-14 w-10 rounded-md object-cover"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = fallbackCover;
+                          }}
                         />
                         <span className="text-sm text-slate-100">{item.title.romaji}</span>
                       </button>
@@ -597,6 +616,10 @@ export default function MediaTracker() {
                 src={normalizeCover(itemSelecionado.coverImage?.medium)}
                 alt={itemSelecionado.title.romaji}
                 className="h-40 w-28 rounded-lg border border-slate-500/35 object-cover"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = fallbackCover;
+                }}
               />
 
               <div className="space-y-2">

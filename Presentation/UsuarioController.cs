@@ -116,7 +116,15 @@ namespace deskgeek.Presentation
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync("MyCookieAuth");
+            Response.Cookies.Delete("AuthToken", new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Path = "/"
+            });
+
+            await HttpContext.SignOutAsync();
             return Ok(new { success = true });
         }
         [HttpPut("{id}")]

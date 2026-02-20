@@ -34,11 +34,20 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 
 ConformitySettings.ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
+var allowedCorsOrigins = new[]
+{
+    "http://localhost:5173",
+    "https://mediadex.devporwillie.shop",
+    "http://mediadex.devporwillie.shop",
+    "https://www.mediadex.devporwillie.shop",
+    "http://www.mediadex.devporwillie.shop"
+};
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend",
         policy => policy
-            .WithOrigins("http://localhost:5173")
+            .WithOrigins(allowedCorsOrigins)
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials());
@@ -108,6 +117,7 @@ var configuration = new MapperConfiguration(cfg =>
 
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IMapper>(sp => configuration.CreateMapper());
+builder.Services.AddHttpClient();
 
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<MediaRepository>();
@@ -186,7 +196,7 @@ app.MapControllers();
 
 if (app.Environment.IsProduction())
 {
-    app.Urls.Add("http://0.0.0.0:5001");
+    app.Urls.Add("http://0.0.0.0:5095");
 }
 
 app.Run();
