@@ -12,6 +12,7 @@ namespace deskgeek.Domain
         public string? TotalCapitulos { get; set; }
         public string? CapituloAtual { get; set; }
         public string? Status { get; set; }
+        public string? TipoMidia { get; set; }
         public string? DiaNovoCapitulo { get; set; }
         [NotMapped]
         public IFormFile ImagemUpload { get; set; }

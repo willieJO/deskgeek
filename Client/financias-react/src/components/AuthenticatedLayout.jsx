@@ -10,7 +10,7 @@ import {
 
 const menuItems = [
   {
-    label: "Acompanhar obra",
+    label: "Acompanhar mídia",
     icon: <HiOutlineHomeModern size={20} />,
     path: "/dashboard",
   },

@@ -74,6 +74,7 @@ const diasSemana = [
 ];
 
 const statusOpcoes = ["Em andamento", "Finalizado", "Inativo"];
+const tipoMidiaOpcoes = ["Anime", "Mangá", "Manhua", "Série", "Filme"];
 
 function getImageSource(item) {
   if (item.imagemDirectory) {
@@ -136,6 +137,7 @@ export function TabelaDex() {
         formData.append("capituloAtual", selectedItem.capituloAtual);
         formData.append("diaNovoCapitulo", selectedItem.diaNovoCapitulo);
         formData.append("status", selectedItem.status);
+        formData.append("tipoMidia", selectedItem.tipoMidia || "");
 
         await api.put(`/MediaDex/${selectedItem.id}`, formData, {
           headers: {
@@ -213,8 +215,13 @@ export function TabelaDex() {
       size: 80,
     },
     { accessorKey: "nome", header: "Nome" },
-    { accessorKey: "totalCapitulos", header: "Total de capítulos" },
-    { accessorKey: "capituloAtual", header: "Capítulo atual" },
+    {
+      accessorKey: "tipoMidia",
+      header: "Tipo",
+      Cell: ({ cell }) => cell.getValue() || "Não definido",
+    },
+    { accessorKey: "totalCapitulos", header: "Total" },
+    { accessorKey: "capituloAtual", header: "Progresso atual" },
     { accessorKey: "diaNovoCapitulo", header: "Lançamento" },
     {
       accessorKey: "status",
@@ -384,7 +391,22 @@ export function TabelaDex() {
             />
 
             <TextField
-              label="Total de capítulos"
+              select
+              label="Tipo"
+              value={selectedItem?.tipoMidia || ""}
+              onChange={(e) => setSelectedItem({ ...selectedItem, tipoMidia: e.target.value })}
+              fullWidth
+            >
+              <MenuItem value="">Não definido</MenuItem>
+              {tipoMidiaOpcoes.map((tipo) => (
+                <MenuItem key={tipo} value={tipo}>
+                  {tipo}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              label="Total"
               type="number"
               value={selectedItem?.totalCapitulos || ""}
               onChange={(e) =>
@@ -397,7 +419,7 @@ export function TabelaDex() {
             />
 
             <TextField
-              label="Capítulo atual"
+              label="Progresso atual"
               type="number"
               value={selectedItem?.capituloAtual || ""}
               onChange={(e) =>
