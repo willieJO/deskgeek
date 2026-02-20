@@ -86,6 +86,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.Configure<SshSettings>(
     builder.Configuration.GetSection("SshSettings")
 );
+builder.Services.Configure<StorageSettings>(
+    builder.Configuration.GetSection("StorageSettings")
+);
 builder.Services.AddScoped<UploadService>();
 
 var loggerFactory = LoggerFactory.Create(builder =>
