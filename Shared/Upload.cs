@@ -1,6 +1,5 @@
-﻿using deskgeek.Domain;
+using deskgeek.Domain;
 using Microsoft.Extensions.Options;
-using Renci.SshNet;
 using System.Diagnostics;
 
 namespace deskgeek.Shared
@@ -8,10 +7,12 @@ namespace deskgeek.Shared
     public class UploadService
     {
         private readonly SshSettings _ssh;
+        private readonly StorageSettings _storage;
 
-        public UploadService(IOptions<SshSettings> options)
+        public UploadService(IOptions<SshSettings> sshOptions, IOptions<StorageSettings> storageOptions)
         {
-            _ssh = options.Value;
+            _ssh = sshOptions.Value;
+            _storage = storageOptions.Value;
         }
 
         public async Task<string> UploadImageToServer(byte[] imageBytes, string originalFileName)
@@ -19,13 +20,21 @@ namespace deskgeek.Shared
             var extension = Path.GetExtension(originalFileName);
             var uniqueFileName = $"{Guid.NewGuid()}{extension}";
 
+            if (UseLocalStorage())
+            {
+                var localBasePath = ResolveLocalBasePath();
+                Directory.CreateDirectory(localBasePath);
+
+                var destinationPath = Path.Combine(localBasePath, uniqueFileName);
+                await File.WriteAllBytesAsync(destinationPath, imageBytes);
+
+                return uniqueFileName;
+            }
+
             var localTempFile = Path.Combine(Path.GetTempPath(), uniqueFileName);
             await File.WriteAllBytesAsync(localTempFile, imageBytes);
 
-            var remoteDirectory = _ssh.RemoteBasePath.EndsWith("/")
-                ? _ssh.RemoteBasePath
-                : _ssh.RemoteBasePath + "/";
-
+            var remoteDirectory = ResolveRemoteDirectory();
             var remoteFilePath = remoteDirectory + uniqueFileName;
 
             RunCommand(
@@ -47,14 +56,32 @@ namespace deskgeek.Shared
             );
 
             File.Delete(localTempFile);
-
             return uniqueFileName;
         }
 
         public string? BaixarArquivoRemoto(string nomeArquivo)
         {
-            var remotePath = $"{_ssh.RemoteBasePath}/{nomeArquivo}";
-            var tempFileLocal = Path.Combine(Path.GetTempPath(), nomeArquivo);
+            var safeFileName = Path.GetFileName(nomeArquivo);
+            if (string.IsNullOrWhiteSpace(safeFileName))
+            {
+                return null;
+            }
+
+            var tempFileLocal = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}_{safeFileName}");
+
+            if (UseLocalStorage())
+            {
+                var sourcePath = Path.Combine(ResolveLocalBasePath(), safeFileName);
+                if (!File.Exists(sourcePath))
+                {
+                    return null;
+                }
+
+                File.Copy(sourcePath, tempFileLocal, true);
+                return tempFileLocal;
+            }
+
+            var remotePath = $"{ResolveRemoteDirectory()}{safeFileName}";
 
             RunCommand(
                 "scp",
@@ -68,6 +95,39 @@ namespace deskgeek.Shared
             );
 
             return File.Exists(tempFileLocal) ? tempFileLocal : null;
+        }
+
+        private bool UseLocalStorage()
+        {
+            return string.Equals(_storage.Provider, "Local", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private string ResolveLocalBasePath()
+        {
+            var configuredPath = _storage.LocalBasePath?.Trim();
+            if (string.IsNullOrWhiteSpace(configuredPath))
+            {
+                return Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "mediaDex");
+            }
+
+            if (Path.IsPathRooted(configuredPath))
+            {
+                return configuredPath;
+            }
+
+            return Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), configuredPath));
+        }
+
+        private string ResolveRemoteDirectory()
+        {
+            if (string.IsNullOrWhiteSpace(_ssh.RemoteBasePath))
+            {
+                throw new Exception("SshSettings:RemoteBasePath não configurado para upload remoto.");
+            }
+
+            return _ssh.RemoteBasePath.EndsWith("/")
+                ? _ssh.RemoteBasePath
+                : _ssh.RemoteBasePath + "/";
         }
 
         private static void RunCommand(string command, string args)
@@ -86,7 +146,6 @@ namespace deskgeek.Shared
 
             process.Start();
 
-            // Timeout de segurança (30 segundos)
             if (!process.WaitForExit(30000))
             {
                 process.Kill();
@@ -103,7 +162,9 @@ namespace deskgeek.Shared
             Console.WriteLine(error);
 
             if (process.ExitCode != 0)
+            {
                 throw new Exception($"Erro ao executar comando:\n{error}");
+            }
         }
     }
 }
