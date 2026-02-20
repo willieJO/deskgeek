@@ -33,9 +33,39 @@ const diasPorIndice = [
   "Sábado",
 ];
 
+const hoverPreviewWidth = 330;
+const hoverPreviewHeight = 210;
+const hoverPreviewPadding = 12;
+const hoverPreviewOffset = 18;
+
+function getHoverPreviewPosition(clientX, clientY) {
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  let left = clientX + hoverPreviewOffset;
+  let top = clientY - 24;
+
+  if (left + hoverPreviewWidth > viewportWidth - hoverPreviewPadding) {
+    left = clientX - hoverPreviewWidth - hoverPreviewOffset;
+  }
+  if (left < hoverPreviewPadding) {
+    left = hoverPreviewPadding;
+  }
+
+  if (top + hoverPreviewHeight > viewportHeight - hoverPreviewPadding) {
+    top = viewportHeight - hoverPreviewHeight - hoverPreviewPadding;
+  }
+  if (top < hoverPreviewPadding) {
+    top = hoverPreviewPadding;
+  }
+
+  return { left, top };
+}
+
 export default function CalendarioDex() {
   const [eventos, setEventos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hoverPreview, setHoverPreview] = useState(null);
 
   useEffect(() => {
     async function fetchEventos() {
@@ -71,6 +101,7 @@ export default function CalendarioDex() {
             extendedProps: {
               imagem: urlImagem,
               status: item.status,
+              dayIndex,
             },
           };
         });
@@ -84,6 +115,18 @@ export default function CalendarioDex() {
     }
 
     fetchEventos();
+  }, []);
+
+  useEffect(() => {
+    const clearHoverPreview = () => setHoverPreview(null);
+
+    window.addEventListener("resize", clearHoverPreview);
+    window.addEventListener("scroll", clearHoverPreview, true);
+
+    return () => {
+      window.removeEventListener("resize", clearHoverPreview);
+      window.removeEventListener("scroll", clearHoverPreview, true);
+    };
   }, []);
 
   const quantidadePorDia = useMemo(() => {
@@ -102,8 +145,38 @@ export default function CalendarioDex() {
     return entradas.sort((a, b) => b[1] - a[1])[0][0];
   }, [quantidadePorDia]);
 
+  const handleEventMouseEnter = (mouseEvent, eventInfo) => {
+    const { left, top } = getHoverPreviewPosition(mouseEvent.clientX, mouseEvent.clientY);
+    const dayIndex = eventInfo.event.extendedProps.dayIndex;
+
+    setHoverPreview({
+      left,
+      top,
+      title: eventInfo.event.title,
+      imagem: eventInfo.event.extendedProps.imagem,
+      dia: diasPorIndice[dayIndex] || "Sem dia definido",
+    });
+  };
+
+  const handleEventMouseMove = (mouseEvent) => {
+    setHoverPreview((prev) => {
+      if (!prev) return prev;
+      const { left, top } = getHoverPreviewPosition(mouseEvent.clientX, mouseEvent.clientY);
+      return { ...prev, left, top };
+    });
+  };
+
+  const handleEventMouseLeave = () => {
+    setHoverPreview(null);
+  };
+
   const eventContent = (eventInfo) => (
-    <div className="cal-event-content">
+    <div
+      className="cal-event-content"
+      onMouseEnter={(event) => handleEventMouseEnter(event, eventInfo)}
+      onMouseMove={handleEventMouseMove}
+      onMouseLeave={handleEventMouseLeave}
+    >
       <img
         src={eventInfo.event.extendedProps.imagem}
         alt={eventInfo.event.title}
@@ -162,6 +235,25 @@ export default function CalendarioDex() {
           eventContent={eventContent}
         />
       </section>
+
+      {hoverPreview && (
+        <div className="cal-hover-preview-layer" aria-hidden="true">
+          <article
+            className="cal-hover-preview"
+            style={{ left: `${hoverPreview.left}px`, top: `${hoverPreview.top}px` }}
+          >
+            <img
+              src={hoverPreview.imagem}
+              alt={hoverPreview.title}
+              className="cal-hover-preview-image"
+            />
+            <div className="cal-hover-preview-info">
+              <p className="cal-hover-preview-day">{hoverPreview.dia}</p>
+              <h3 className="cal-hover-preview-title">{hoverPreview.title}</h3>
+            </div>
+          </article>
+        </div>
+      )}
     </div>
   );
 }
