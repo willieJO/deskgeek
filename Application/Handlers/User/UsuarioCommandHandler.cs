@@ -22,12 +22,12 @@ namespace deskgeek.Application.Handlers
         {
             var usuario = new Domain.User
             {
-                Name = request.Nome,
-                Email = request.Email,
+                Usuario = request.Usuario.Trim(),
+                Email = request.Email.Trim(),
                 Senha = request.Senha.HashPassword()
             };
             await _usuarioRepository.AddAsync(usuario);
-            await _mediator.Publish(new UserCriadaNotification { Id = usuario.Id, Nome = usuario.Name });
+            await _mediator.Publish(new UserCriadaNotification { Id = usuario.Id, Usuario = usuario.Usuario });
             return usuario.Id;
         }
     }

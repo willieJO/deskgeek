@@ -30,15 +30,15 @@
 - `Client/financias-react/src/pages/Register.jsx`: formulário de cadastro, valida confirmação e aciona API.
 - `Client/financias-react/src/utils/api.js`: cliente Axios com `withCredentials`.
 - `Presentation/UsuarioController.cs`: endpoint `register` com retorno de validações.
-- `Application/Validators/UsuarioCommandValidator.cs`: regras de nome, email único e senha mínima.
+- `Application/Validators/UsuarioCommandValidator.cs`: regras de usuário único, email único e senha mínima.
 - `Application/Handlers/User/UsuarioCommandHandler.cs`: cria entidade `User` e aplica hash de senha.
-- `Repository/UsuarioRepository.cs`: grava usuário e verifica existência de email.
+- `Repository/UsuarioRepository.cs`: grava usuário e verifica existência de email/usuário.
 - `Shared/PasswordSecurity.cs`: hash PBKDF2 da senha antes da persistência.
 
 ## 5. Mapeamento de dados
-- Front envia `nome`, `email`, `senha`.
+- Front envia `usuario`, `email`, `senha`.
 - Handler converte para domínio `User`:
-  - `Name <- Nome`
+  - `Usuario <- Usuario`
   - `Email <- Email`
   - `Senha <- Senha.HashPassword()`
 
@@ -50,5 +50,6 @@
 ## 7. Casos técnicos de teste recomendados
 - `TC-REG-001`: cadastro com dados válidos persiste hash e não senha pura.
 - `TC-REG-002`: tentativa com email duplicado retorna erro de validação.
-- `TC-REG-003`: senha curta é rejeitada no backend.
-- `TC-REG-004`: mismatch de senha é bloqueado no frontend.
+- `TC-REG-003`: tentativa com usuário duplicado retorna erro de validação.
+- `TC-REG-004`: senha curta é rejeitada no backend.
+- `TC-REG-005`: mismatch de senha é bloqueado no frontend.

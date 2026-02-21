@@ -5,7 +5,7 @@ using MediatR;
 
 namespace deskgeek.Application.Handlers.Usuario
 {
-    public class UsuarioByIdQueryHandler : IRequestHandler<UsuarioByIdQuery, Domain.User>
+    public class UsuarioByIdQueryHandler : IRequestHandler<UsuarioByIdQuery, Domain.User?>
     {
         private readonly IUsuarioRepository _usuarioRepository;
 
@@ -14,7 +14,7 @@ namespace deskgeek.Application.Handlers.Usuario
             _usuarioRepository = usuarioRepository;
         }
 
-        public async Task<Domain.User> Handle(UsuarioByIdQuery request, CancellationToken cancellationToken)
+        public async Task<Domain.User?> Handle(UsuarioByIdQuery request, CancellationToken cancellationToken)
         {
             return await _usuarioRepository.GetByIdAsync(request.Id);
         }

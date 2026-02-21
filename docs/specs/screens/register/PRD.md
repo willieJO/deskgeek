@@ -5,7 +5,7 @@ Tela pública para criação de conta, com validação básica no front e valida
 
 ## 2. Fluxo principal
 1. Usuário acessa `/register`.
-2. Informa `Nome`, `Email`, `Senha`, `Confirmar senha`.
+2. Informa `Usuário`, `Email`, `Senha`, `Confirmar senha`.
 3. Front compara `senha` e `confirmSenha`.
 4. Se válidas, chama `POST /api/Usuario/register`.
 5. Em sucesso (`200` ou `201`), exibe toast e navega para `/login` após 1.5s.
@@ -16,12 +16,12 @@ Tela pública para criação de conta, com validação básica no front e valida
 - Link `Voltar para login` leva para `/login`.
 
 ## 4. Campos e validações
-- `name`: obrigatório no front.
+- `usuario`: obrigatório no front.
 - `email`: obrigatório e tipo email no front.
 - `senha`: obrigatório.
 - `confirmSenha`: obrigatório e deve ser idêntica à `senha`.
 - Back-end:
-  - Nome obrigatório com mínimo 3.
+  - Usuário obrigatório com mínimo 3 e único no sistema.
   - Email obrigatório, formato válido e único.
   - Senha obrigatória com mínimo 6.
 
@@ -34,7 +34,7 @@ Tela pública para criação de conta, com validação básica no front e valida
 - `POST /api/Usuario/register`
 ```json
 {
-  "nome": "Nome Usuário",
+  "usuario": "usuario_unico",
   "email": "user@email.com",
   "senha": "123456"
 }
@@ -60,7 +60,7 @@ Tela pública para criação de conta, com validação básica no front e valida
 ## 7. Critérios de aceite
 - `AC-REG-001`: cadastro válido cria usuário e redireciona para login.
 - `AC-REG-002`: senha e confirmação diferentes bloqueiam envio.
-- `AC-REG-003`: backend retorna erro descritivo para email duplicado.
+- `AC-REG-003`: backend retorna erro descritivo para email ou usuário duplicado.
 - `AC-REG-004`: botão evita múltiplos envios simultâneos.
 
 ## 8. Referências front/back

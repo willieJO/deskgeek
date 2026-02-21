@@ -5,7 +5,7 @@ using deskgeek.Shared;
 using MediatR;
 using Newtonsoft.Json.Linq;
 
-namespace deskgeek.Application.Handlers.User
+namespace deskgeek.Application.Handlers
 {
     public class LoginQueryHandler : IRequestHandler<LoginQuery, string>
     {

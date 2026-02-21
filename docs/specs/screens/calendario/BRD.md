@@ -13,6 +13,8 @@ Oferecer visão temporal dos lançamentos recorrentes das obras em andamento par
 - `BRD-CAL-003`: cada obra vira evento recorrente semanal (`daysOfWeek`).
 - `BRD-CAL-004`: imagem do evento prioriza `imagemDirectory`, depois `imagemUrl`, depois placeholder.
 - `BRD-CAL-005`: tela exibe KPIs rápidos: total ativo e dia com maior concentração.
+- `BRD-CAL-006`: usuario autenticado pode visualizar o calendario de outro usuario informando `usuario`.
+- `BRD-CAL-007`: busca de usuário exibe sugestões filtradas dos usuários cadastrados.
 
 ## 4. Valor de negócio
 - Visibilidade semanal do que deve ser acompanhado.
@@ -26,6 +28,8 @@ Oferecer visão temporal dos lançamentos recorrentes das obras em andamento par
 
 ## Back-end
 - `Presentation/MediaDexController.cs` (`GET /api/MediaDex/obterMediaPorUsuarioPorStatusEmAndamento`)
+- `Presentation/MediaDexController.cs` (`GET /api/MediaDex/obterMediaPorUsuarioPorStatusEmAndamentoPorUsuario?usuario=...`)
+- `Presentation/UsuarioController.cs` (`GET /api/Usuario/buscar?termo=...`)
 - `Application/Queries/MediaDexEmAndamentoQuery.cs`
 - `Application/Handlers/Media/MediaDexEmAndamentoQueryHandler.cs`
 - `Repository/MediaRepository.cs`
@@ -33,4 +37,3 @@ Oferecer visão temporal dos lançamentos recorrentes das obras em andamento par
 ## 6. Fora de escopo
 - Notificações push por dia.
 - Múltiplos horários no mesmo dia.
-- Calendário compartilhado entre usuários.

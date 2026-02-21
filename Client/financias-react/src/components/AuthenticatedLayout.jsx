@@ -39,15 +39,15 @@ export default function AuthenticatedLayout({ onLogout }) {
     "Painel";
 
   async function handleLogout() {
+    localStorage.removeItem("token");
+    setMobileOpen(false);
+    onLogout?.();
+    navigate("/login", { replace: true });
+
     try {
       await api.post("/usuario/logout");
     } catch {
-      // Mesmo com erro no backend, seguimos limpando sessão local.
-    } finally {
-      localStorage.removeItem("token");
-      setMobileOpen(false);
-      onLogout?.();
-      navigate("/login", { replace: true });
+      // Mesmo com erro no backend, usuário já foi deslogado localmente.
     }
   }
 

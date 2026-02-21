@@ -1,16 +1,14 @@
 ﻿using deskgeek.Application.Commands;
-using deskgeek.Application.Handlers;
 using deskgeek.Application.Queries;
+using deskgeek.Domain;
 using FluentValidation;
 using MediatR;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace deskgeek.Presentation
 {
@@ -19,6 +17,7 @@ namespace deskgeek.Presentation
     public class UsuarioController : ControllerBase
 
     {
+        private const string AuthCookieName = "AuthToken";
         private readonly IMediator _mediator;
         public UsuarioController(IMediator mediator)
         {
@@ -89,11 +88,12 @@ namespace deskgeek.Presentation
 
                 var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
 
-                Response.Cookies.Append("AuthToken", tokenString, new CookieOptions
+                Response.Cookies.Append(AuthCookieName, tokenString, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true, 
                     SameSite = SameSiteMode.Strict,
+                    Path = "/",
                     Expires = DateTime.UtcNow.AddDays(7)
                 });
 
@@ -114,17 +114,25 @@ namespace deskgeek.Presentation
         }
 
         [HttpPost("logout")]
-        public async Task<IActionResult> Logout()
+        public IActionResult Logout()
         {
-            Response.Cookies.Delete("AuthToken", new CookieOptions
+            // Remove cookie em múltiplos paths legados para evitar sessão "fantasma" após F5.
+            var cookiePaths = new[] { "/", "/api", "/api/usuario", "/api/Usuario" };
+            var secureOptions = new[] { true, false };
+            foreach (var path in cookiePaths)
             {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
-                Path = "/"
-            });
+                foreach (var secure in secureOptions)
+                {
+                    Response.Cookies.Delete(AuthCookieName, new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Secure = secure,
+                        SameSite = SameSiteMode.Strict,
+                        Path = path
+                    });
+                }
+            }
 
-            await HttpContext.SignOutAsync();
             return Ok(new { success = true });
         }
         [HttpPut("{id}")]
@@ -148,6 +156,26 @@ namespace deskgeek.Presentation
             var usuarios = await _mediator.Send(new UsuarioQuery());
             return Ok(usuarios);
         }
+
+        [HttpGet("buscar")]
+        [Authorize]
+        public async Task<IActionResult> BuscarUsuarios([FromQuery] string termo, [FromQuery] int limite = 10)
+        {
+            var termoNormalizado = (termo ?? string.Empty).Trim();
+            if (termoNormalizado.Length < 2)
+            {
+                return Ok(new List<UsuarioResumo>());
+            }
+
+            var usuarios = await _mediator.Send(new BuscarUsuarioQuery
+            {
+                Termo = termoNormalizado,
+                Limite = limite
+            });
+
+            return Ok(usuarios);
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUsuarioById(Guid id)
         {
