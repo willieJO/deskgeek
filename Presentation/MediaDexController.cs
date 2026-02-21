@@ -1,5 +1,4 @@
 ﻿using deskgeek.Application.Commands;
-using deskgeek.Application.Commands;
 using deskgeek.Application.Queries;
 using deskgeek.Shared;
 using FluentValidation;
@@ -51,6 +50,26 @@ namespace deskgeek.Presentation
                 return Ok(mediaDexList);
             }
             return Unauthorized();
+        }
+
+        [HttpGet("obterMediaPorUsuarioPorStatusEmAndamentoPorUsuario")]
+        [Authorize]
+        public async Task<IActionResult> ObterMediaPorOutroUsuarioPorStatusEmAndamentoPorUsuario([FromQuery] string usuario)
+        {
+            var usuarioNormalizado = (usuario ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(usuarioNormalizado))
+            {
+                return BadRequest(new { message = "Parâmetro 'usuario' é obrigatório." });
+            }
+
+            var usuarioEncontrado = await _mediator.Send(new UsuarioByUsuarioQuery { Usuario = usuarioNormalizado });
+            if (usuarioEncontrado == null)
+            {
+                return NotFound(new { message = "Usuário não encontrado." });
+            }
+
+            var mediaDexList = await _mediator.Send(new MediaDexEmAndamentoQuery { Id = usuarioEncontrado.Id });
+            return Ok(mediaDexList);
         }
 
 

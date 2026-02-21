@@ -8,10 +8,10 @@ Permitir criação de novas contas para acesso ao ecossistema MediaDex.
 - Backend de usuários (`UsuarioController`).
 
 ## 3. Regras de negócio atuais
-- `BRD-REG-001`: cadastro exige `nome`, `email`, `senha`.
+- `BRD-REG-001`: cadastro exige `usuario`, `email`, `senha`.
 - `BRD-REG-002`: front valida confirmação de senha antes do envio.
-- `BRD-REG-003`: backend exige nome mínimo 3, email válido e senha mínima 6.
-- `BRD-REG-004`: email deve ser único (validação em repositório).
+- `BRD-REG-003`: backend exige usuário mínimo 3, email válido e senha mínima 6.
+- `BRD-REG-004`: email e usuário devem ser únicos (validação em repositório).
 - `BRD-REG-005`: senha é armazenada com hash PBKDF2.
 - `BRD-REG-006`: em sucesso, usuário é redirecionado para `/login`.
 

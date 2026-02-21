@@ -5,10 +5,12 @@ Calendário mensal com eventos recorrentes por dia da semana para obras ativas.
 
 ## 2. Fluxo principal
 1. Tela monta.
-2. Front chama `GET /api/MediaDex/obterMediaPorUsuarioPorStatusEmAndamento`.
-3. Front aplica filtro defensivo (`status === "Em andamento"` e `diaNovoCapitulo != null`).
-4. Converte obras em eventos do FullCalendar.
-5. Renderiza cards de evento com imagem e título.
+2. Front chama `GET /api/MediaDex/obterMediaPorUsuarioPorStatusEmAndamento` para o usuario logado.
+3. Ao digitar no campo de busca, front consulta `GET /api/Usuario/buscar?termo=...`.
+4. Opcionalmente, ao informar `usuario`, front chama `GET /api/MediaDex/obterMediaPorUsuarioPorStatusEmAndamentoPorUsuario?usuario=...`.
+5. Front aplica filtro defensivo (`status === "Em andamento"` e `diaNovoCapitulo != null`).
+6. Converte obras em eventos do FullCalendar.
+7. Renderiza cards de evento com imagem e título.
 
 ## 3. Regras de transformação
 - `diaNovoCapitulo` textual é mapeado para índice semanal (`0` a `6`).
@@ -25,6 +27,8 @@ Calendário mensal com eventos recorrentes por dia da semana para obras ativas.
 - `AC-CAL-002`: cada obra aparece no dia correto no calendário.
 - `AC-CAL-003`: imagem fallback funciona sem quebrar layout.
 - `AC-CAL-004`: falha de API não quebra renderização da página.
+- `AC-CAL-005`: ao informar `usuario` válido, a tela exibe o calendário do usuário selecionado.
+- `AC-CAL-006`: ao digitar no campo de usuário, a tela exibe sugestões filtradas de usuários cadastrados.
 
 ## 6. Referências front/back
 - Front: `Client/financias-react/src/pages/CalendarioDex.jsx`, `Client/financias-react/src/pages/calendario.css`

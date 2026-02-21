@@ -20,7 +20,7 @@
 - `Presentation/UsuarioController.cs`: endpoints de auth.
 - `Application/Validators/LoginQuerieValidator.cs`: validacao do login.
 - `Application/Validators/UsuarioCommandValidator.cs`: validacao de cadastro.
-- `Repository/UsuarioRepository.cs`: consulta usuario e verifica email unico.
+- `Repository/UsuarioRepository.cs`: consulta usuario e verifica unicidade de email/usuário.
 - `Shared/PasswordSecurity.cs`: hash/verificacao PBKDF2.
 
 ## Riscos tecnicos atuais
@@ -30,5 +30,6 @@
 ## Testes recomendados
 - Login valido/invalido.
 - Cadastro com email repetido.
+- Cadastro com usuário repetido.
 - Acesso a rota privada sem sessao.
 - Logout seguido de tentativa de acesso privado.

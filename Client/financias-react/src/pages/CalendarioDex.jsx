@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
+import { useSearchParams } from "react-router-dom";
 import api from "../utils/api";
 import "./calendario.css";
 
@@ -37,6 +38,7 @@ const hoverPreviewWidth = 330;
 const hoverPreviewHeight = 210;
 const hoverPreviewPadding = 12;
 const hoverPreviewOffset = 18;
+const minimoBuscaUsuario = 2;
 
 function getHoverPreviewPosition(clientX, clientY) {
   const viewportWidth = window.innerWidth;
@@ -63,23 +65,37 @@ function getHoverPreviewPosition(clientX, clientY) {
 }
 
 export default function CalendarioDex() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const usuarioSelecionado = (searchParams.get("usuario") ?? "").trim();
   const [eventos, setEventos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hoverPreview, setHoverPreview] = useState(null);
+  const [filtroUsuario, setFiltroUsuario] = useState(usuarioSelecionado);
+  const [mensagemFiltro, setMensagemFiltro] = useState("");
+  const [usuariosFiltrados, setUsuariosFiltrados] = useState([]);
+  const [buscandoUsuarios, setBuscandoUsuarios] = useState(false);
+  const cacheBuscaUsuarios = useRef(new Map());
+
+  useEffect(() => {
+    setFiltroUsuario(usuarioSelecionado);
+  }, [usuarioSelecionado]);
 
   useEffect(() => {
     async function fetchEventos() {
       setLoading(true);
       try {
-        const token = localStorage.getItem("token");
-        const response = await api.get("/MediaDex/obterMediaPorUsuarioPorStatusEmAndamento", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = usuarioSelecionado
+          ? await api.get("/MediaDex/obterMediaPorUsuarioPorStatusEmAndamentoPorUsuario", {
+              params: { usuario: usuarioSelecionado },
+              withCredentials: true,
+            })
+          : await api.get("/MediaDex/obterMediaPorUsuarioPorStatusEmAndamento", {
+              withCredentials: true,
+            });
 
-        const data = response.data.filter(
-          (item) =>
-            item.status === "Em andamento" &&
-            item.diaNovoCapitulo != null
+        const lista = Array.isArray(response.data) ? response.data : [];
+        const data = lista.filter(
+          (item) => item.status === "Em andamento" && item.diaNovoCapitulo != null
         );
 
         const eventosFullCalendar = data.map((item) => {
@@ -106,16 +122,65 @@ export default function CalendarioDex() {
           };
         });
 
+        setMensagemFiltro("");
         setEventos(eventosFullCalendar);
       } catch (error) {
-        console.error("Erro ao carregar eventos:", error);
+        const mensagemApi = error?.response?.data?.message;
+        setMensagemFiltro(
+          mensagemApi || "Não foi possível carregar o calendário para este usuário."
+        );
+        setEventos([]);
       } finally {
         setLoading(false);
       }
     }
 
     fetchEventos();
-  }, []);
+  }, [usuarioSelecionado]);
+
+  useEffect(() => {
+    const termo = filtroUsuario.trim();
+    if (termo.length < minimoBuscaUsuario) {
+      setBuscandoUsuarios(false);
+      setUsuariosFiltrados([]);
+      return;
+    }
+    if (cacheBuscaUsuarios.current.has(termo)) {
+      setUsuariosFiltrados(cacheBuscaUsuarios.current.get(termo));
+      setBuscandoUsuarios(false);
+      return;
+    }
+
+    let ativo = true;
+    const timer = setTimeout(async () => {
+      setBuscandoUsuarios(true);
+      try {
+        const response = await api.get("/usuario/buscar", {
+          params: { termo, limite: 8 },
+          withCredentials: true,
+        });
+
+        if (ativo) {
+          const resultados = Array.isArray(response.data) ? response.data : [];
+          cacheBuscaUsuarios.current.set(termo, resultados);
+          setUsuariosFiltrados(resultados);
+        }
+      } catch {
+        if (ativo) {
+          setUsuariosFiltrados([]);
+        }
+      } finally {
+        if (ativo) {
+          setBuscandoUsuarios(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      ativo = false;
+      clearTimeout(timer);
+    };
+  }, [filtroUsuario]);
 
   useEffect(() => {
     const clearHoverPreview = () => setHoverPreview(null);
@@ -170,6 +235,34 @@ export default function CalendarioDex() {
     setHoverPreview(null);
   };
 
+  const handleFiltrarCalendario = (event) => {
+    event.preventDefault();
+    const usuarioNormalizado = filtroUsuario.trim();
+
+    if (!usuarioNormalizado) {
+      setMensagemFiltro("Informe um usuário para visualizar outro calendário.");
+      return;
+    }
+
+    setMensagemFiltro("");
+    setUsuariosFiltrados([]);
+    setSearchParams({ usuario: usuarioNormalizado });
+  };
+
+  const handleSelecionarUsuario = (usuario) => {
+    setFiltroUsuario(usuario);
+    setMensagemFiltro("");
+    setUsuariosFiltrados([]);
+    setSearchParams({ usuario });
+  };
+
+  const handleVerMeuCalendario = () => {
+    setMensagemFiltro("");
+    setFiltroUsuario("");
+    setUsuariosFiltrados([]);
+    setSearchParams({});
+  };
+
   const eventContent = (eventInfo) => (
     <div
       className="cal-event-content"
@@ -194,6 +287,61 @@ export default function CalendarioDex() {
         <p className="section-subtitle">
           Veja rapidamente em quais dias cada capítulo novo costuma sair.
         </p>
+
+        <form onSubmit={handleFiltrarCalendario} className="mt-4 space-y-3">
+          <label className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-300">
+            Visualizar calendário de outro usuário
+          </label>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input
+              value={filtroUsuario}
+              onChange={(event) => setFiltroUsuario(event.target.value)}
+              placeholder="Digite o usuário"
+              className="w-full rounded-xl border border-slate-600 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-300 focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="rounded-xl border border-cyan-300/45 bg-cyan-300/15 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/25"
+            >
+              Carregar
+            </button>
+            <button
+              type="button"
+              onClick={handleVerMeuCalendario}
+              className="rounded-xl border border-slate-500/40 bg-slate-800/70 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-slate-700/70"
+            >
+              Ver meu calendário
+            </button>
+          </div>
+
+          {buscandoUsuarios && (
+            <p className="text-sm text-slate-300">Buscando usuários cadastrados...</p>
+          )}
+
+          {!buscandoUsuarios && usuariosFiltrados.length > 0 && (
+            <ul className="max-h-52 overflow-y-auto rounded-xl border border-slate-600/70 bg-slate-900/90 p-1">
+              {usuariosFiltrados.map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    onClick={() => handleSelecionarUsuario(item.usuario)}
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-100 transition hover:bg-cyan-300/20"
+                  >
+                    {item.usuario}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {mensagemFiltro && <p className="text-sm text-amber-300">{mensagemFiltro}</p>}
+          {usuarioSelecionado && (
+            <p className="text-sm text-cyan-100">
+              Visualizando calendário do usuário:{" "}
+              <span className="font-semibold">{usuarioSelecionado}</span>
+            </p>
+          )}
+        </form>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-3">

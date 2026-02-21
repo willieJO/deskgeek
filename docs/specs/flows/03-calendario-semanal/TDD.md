@@ -7,9 +7,11 @@
 
 ## Contratos usados
 - `GET /api/MediaDex/obterMediaPorUsuarioPorStatusEmAndamento`
+- `GET /api/MediaDex/obterMediaPorUsuarioPorStatusEmAndamentoPorUsuario?usuario=...`
+- `GET /api/Usuario/buscar?termo=...&limite=...`
 
 ## Matriz arquivo -> funcionalidade
-- `Client/financias-react/src/pages/CalendarioDex.jsx`: consulta, transforma e renderiza eventos.
+- `Client/financias-react/src/pages/CalendarioDex.jsx`: consulta, transforma e renderiza eventos; permite filtrar por `usuario` com autocomplete.
 - `Client/financias-react/src/pages/calendario.css`: estilo visual dos cards/eventos.
 - `Presentation/MediaDexController.cs`: endpoint de calendario.
 - `Application/Queries/MediaDexEmAndamentoQuery.cs`: query de obras ativas.

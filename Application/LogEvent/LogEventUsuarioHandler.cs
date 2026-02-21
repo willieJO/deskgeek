@@ -9,7 +9,7 @@ namespace deskgeek.Application.LogEvent
         {
             return Task.Run(() =>
             {
-                Console.WriteLine($"CRIACAO: '{notification.Id} - {notification.Nome}");
+                Console.WriteLine($"CRIACAO: '{notification.Id} - {notification.Usuario}'");
             });
         }
     }

@@ -9,7 +9,7 @@ Base route de controllers:
 Body:
 ```json
 {
-  "nome": "string",
+  "usuario": "string",
   "email": "string",
   "senha": "string"
 }
@@ -34,12 +34,18 @@ Sucesso: `200` com `{ success, id, email }`.
 ### POST `/api/Usuario/logout`
 Sucesso: `200` com `{ success: true }`.
 
+### GET `/api/Usuario/buscar?termo=...&limite=...` (Authorize)
+Retorna lista otimizada de usuários filtrados por prefixo, com campos `id` e `usuario`.
+
 ## MediaDex
 ### GET `/api/MediaDex/obterMediaPorUsuario` (Authorize)
 Retorna lista de `MediaDex` do usuario logado.
 
 ### GET `/api/MediaDex/obterMediaPorUsuarioPorStatusEmAndamento` (Authorize)
 Retorna lista de `MediaDex` com status em andamento do usuario.
+
+### GET `/api/MediaDex/obterMediaPorUsuarioPorStatusEmAndamentoPorUsuario?usuario=...` (Authorize)
+Retorna lista de `MediaDex` com status em andamento do usuario informado por username.
 
 ### POST `/api/MediaDex/criar` (Authorize, multipart/form-data)
 Campos aceitos:

@@ -10,9 +10,12 @@ namespace deskgeek.Infra.Persistence
         {
             builder.ToTable("Usuario");
             builder.HasKey(x => x.Id);
-            builder.Property(x => x.Name)
+            builder.Property(x => x.Usuario)
+                .HasColumnName("Name")
                 .IsRequired()
                 .HasMaxLength(100);
+            builder.HasIndex(x => x.Usuario)
+                .IsUnique();
             builder.Property(x => x.Email)
                 .IsRequired()
                 .HasMaxLength(200);

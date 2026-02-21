@@ -26,8 +26,14 @@ namespace deskgeek.Application.Behaviors
             if (_validators.Any())
             {
                 var context = new ValidationContext<TRequest>(request);
-                var validationResults = await Task.WhenAll(_validators.Select(v => v.ValidateAsync(context, cancellationToken)));
-                var failures = validationResults.SelectMany(r => r.Errors).Where(f => f != null).ToList();
+                var failures = new List<ValidationFailure>();
+
+                // Executa validadores de forma sequencial para evitar concorrência no mesmo DbContext scoped.
+                foreach (var validator in _validators)
+                {
+                    var result = await validator.ValidateAsync(context, cancellationToken);
+                    failures.AddRange(result.Errors.Where(f => f != null));
+                }
 
                 // Agrupar falhas por PropertyName e garantir que só ocorra uma falha para cada PropertyName
                 var groupedFailures = failures

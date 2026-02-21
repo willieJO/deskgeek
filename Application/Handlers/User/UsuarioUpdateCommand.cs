@@ -20,8 +20,8 @@ namespace deskgeek.Application.Handlers.Usuario
             var usuario = new Domain.User
             {
                 Id = request.Id,
-                Name = request.Nome,
-                Email = request.Email,
+                Usuario = request.Usuario.Trim(),
+                Email = request.Email.Trim(),
                 Senha = request.Senha.HashPassword()
             };
 

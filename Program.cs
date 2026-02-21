@@ -2,7 +2,6 @@ using deskgeek.Application.Behaviors;
 using deskgeek.Application.Commands;
 using deskgeek.Domain;
 using deskgeek.Infra;
-using deskgeek.Infra.Extension;
 using deskgeek.Repository;
 using deskgeek.Shared;
 using AutoMapper;
@@ -129,7 +128,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
 builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-builder.Services.AddValidator();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

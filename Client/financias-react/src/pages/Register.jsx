@@ -5,7 +5,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { toast } from "react-toastify";
 
 export default function Register() {
-  const [name, setName] = useState("");
+  const [usuario, setUsuario] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmSenha, setConfirmSenha] = useState("");
@@ -22,12 +22,19 @@ export default function Register() {
       setMessage("As senhas não coincidem.");
       return;
     }
+    if (!usuario.trim()) {
+      setMessage("Informe um usuário válido.");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
+      const usuarioNormalizado = usuario.trim();
+      const emailNormalizado = email.trim();
+
       const response = await api.post("/usuario/register", {
-        nome: name,
-        email,
+        usuario: usuarioNormalizado,
+        email: emailNormalizado,
         senha,
       });
 
@@ -44,8 +51,20 @@ export default function Register() {
       if (error.response == null) {
         toast.error("Erro interno, consulte o suporte.");
       } else {
-        toast.error(error.response.data[0].message);
-        setMessage(error.response.data[0].message);
+        const payload = error.response.data;
+        let mensagem = "Erro ao cadastrar usuário.";
+
+        if (Array.isArray(payload)) {
+          const erroUsuario = payload.find(
+            (item) => String(item?.field || "").toLowerCase() === "usuario"
+          );
+          mensagem = erroUsuario?.message || payload[0]?.message || mensagem;
+        } else {
+          mensagem = payload?.message || mensagem;
+        }
+
+        toast.error(mensagem);
+        setMessage(mensagem);
       }
     } finally {
       setIsSubmitting(false);
@@ -63,15 +82,15 @@ export default function Register() {
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
-            <label className="ui-label" htmlFor="name">
-              Nome
+            <label className="ui-label" htmlFor="usuario">
+              Usuário
             </label>
             <input
-              id="name"
+              id="usuario"
               type="text"
-              placeholder="Seu nome"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              placeholder="Seu usuário"
+              value={usuario}
+              onChange={(e) => setUsuario(e.target.value)}
               className="ui-input"
               required
             />
