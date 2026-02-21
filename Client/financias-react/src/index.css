@@ -185,7 +185,17 @@ input[type="number"]::-webkit-outer-spin-button {
   border-radius: 0.85rem;
   padding: 0.76rem 1rem;
   font-weight: 700;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease,
+    filter 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .ui-button {
@@ -210,6 +220,7 @@ input[type="number"]::-webkit-outer-spin-button {
 .ui-button-secondary:hover,
 .ui-button-danger:hover {
   transform: translateY(-1px);
+  filter: brightness(1.04);
 }
 
 .ui-button:active,
@@ -218,9 +229,94 @@ input[type="number"]::-webkit-outer-spin-button {
   transform: translateY(0);
 }
 
+.ui-button:disabled,
+.ui-button-secondary:disabled,
+.ui-button-danger:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+  transform: none;
+  filter: grayscale(0.12);
+  box-shadow: none;
+}
+
+.ui-button:focus-visible,
+.ui-button-secondary:focus-visible,
+.ui-button-danger:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
 .ui-link {
   color: #67e8f9;
   font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(103, 232, 249, 0.45);
+  text-underline-offset: 0.17rem;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+.ui-link:hover {
+  color: #a5f3fc;
+  text-decoration-color: rgba(165, 243, 252, 0.85);
+}
+
+.ui-link:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: 0.4rem;
+}
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+.ui-icon-button {
+  border: 1px solid transparent;
+  border-radius: 0.72rem;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.ui-icon-button:hover {
+  color: #a5f3fc;
+  border-color: rgba(103, 232, 249, 0.42);
+  background-color: rgba(8, 24, 44, 0.62);
+}
+
+.ui-icon-button:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.ui-inline-spinner {
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  flex-shrink: 0;
+  animation: ui-spin 0.75s linear infinite;
+}
+
+.ui-inline-spinner-lg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .auth-shell {

@@ -8,6 +8,7 @@ import {
   HiOutlineChevronDoubleLeft,
   HiOutlineHomeModern,
 } from "react-icons/hi2";
+import ButtonSpinner from "./ButtonSpinner";
 import api from "../utils/api";
 
 const menuItems = [
@@ -31,6 +32,7 @@ const menuItems = [
 export default function AuthenticatedLayout({ onLogout }) {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -39,15 +41,18 @@ export default function AuthenticatedLayout({ onLogout }) {
     "Painel";
 
   async function handleLogout() {
-    localStorage.removeItem("token");
-    setMobileOpen(false);
-    onLogout?.();
-    navigate("/login", { replace: true });
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
 
     try {
       await api.post("/usuario/logout");
     } catch {
       // Mesmo com erro no backend, usuário já foi deslogado localmente.
+    } finally {
+      localStorage.removeItem("token");
+      setMobileOpen(false);
+      onLogout?.();
+      navigate("/login", { replace: true });
     }
   }
 
@@ -83,7 +88,7 @@ export default function AuthenticatedLayout({ onLogout }) {
 
           <button
             onClick={() => setSidebarExpanded((value) => !value)}
-            className="hidden rounded-xl border border-slate-500/40 bg-slate-900/75 p-2 text-slate-300 transition hover:text-cyan-200 lg:block"
+            className="ui-icon-button hidden rounded-xl border-slate-500/40 bg-slate-900/75 p-2 text-slate-300 lg:block"
             aria-label="Expandir menu"
           >
             <HiOutlineChevronDoubleLeft
@@ -118,13 +123,14 @@ export default function AuthenticatedLayout({ onLogout }) {
 
         <button
           onClick={handleLogout}
+          disabled={isLoggingOut}
           className={`mt-4 flex items-center rounded-xl border border-rose-300/35 bg-rose-300/10 px-3 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-300/20 ${
             sidebarExpanded ? "gap-3" : "justify-center"
           }`}
           type="button"
         >
-          <HiOutlineArrowLeftOnRectangle size={20} />
-          {sidebarExpanded && <span>Sair</span>}
+          {isLoggingOut ? <ButtonSpinner /> : <HiOutlineArrowLeftOnRectangle size={20} />}
+          {sidebarExpanded && <span>{isLoggingOut ? "Saindo..." : "Sair"}</span>}
         </button>
       </aside>
 
@@ -138,7 +144,7 @@ export default function AuthenticatedLayout({ onLogout }) {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setMobileOpen((value) => !value)}
-                className="rounded-xl border border-slate-500/40 bg-slate-900/80 p-2 text-slate-300 hover:text-cyan-200 lg:hidden"
+                className="ui-icon-button rounded-xl border-slate-500/40 bg-slate-900/80 p-2 text-slate-300 lg:hidden"
                 aria-label="Abrir menu"
               >
                 <HiBars3 size={20} />

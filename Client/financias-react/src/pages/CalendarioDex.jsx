@@ -5,6 +5,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import { useSearchParams } from "react-router-dom";
 import api from "../utils/api";
+import ButtonSpinner from "../components/ButtonSpinner";
 import "./calendario.css";
 
 const baseURL =
@@ -74,6 +75,7 @@ export default function CalendarioDex() {
   const [mensagemFiltro, setMensagemFiltro] = useState("");
   const [usuariosFiltrados, setUsuariosFiltrados] = useState([]);
   const [buscandoUsuarios, setBuscandoUsuarios] = useState(false);
+  const [acaoCarregamento, setAcaoCarregamento] = useState("");
   const cacheBuscaUsuarios = useRef(new Map());
 
   useEffect(() => {
@@ -132,6 +134,7 @@ export default function CalendarioDex() {
         setEventos([]);
       } finally {
         setLoading(false);
+        setAcaoCarregamento("");
       }
     }
 
@@ -246,6 +249,7 @@ export default function CalendarioDex() {
 
     setMensagemFiltro("");
     setUsuariosFiltrados([]);
+    setAcaoCarregamento("usuario");
     setSearchParams({ usuario: usuarioNormalizado });
   };
 
@@ -253,6 +257,7 @@ export default function CalendarioDex() {
     setFiltroUsuario(usuario);
     setMensagemFiltro("");
     setUsuariosFiltrados([]);
+    setAcaoCarregamento("usuario");
     setSearchParams({ usuario });
   };
 
@@ -260,6 +265,7 @@ export default function CalendarioDex() {
     setMensagemFiltro("");
     setFiltroUsuario("");
     setUsuariosFiltrados([]);
+    setAcaoCarregamento("meu");
     setSearchParams({});
   };
 
@@ -301,21 +307,40 @@ export default function CalendarioDex() {
             />
             <button
               type="submit"
-              className="rounded-xl border border-cyan-300/45 bg-cyan-300/15 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/25"
+              className="ui-button w-full sm:w-auto"
+              disabled={loading}
             >
-              Carregar
+              {loading && acaoCarregamento === "usuario" ? (
+                <>
+                  <ButtonSpinner />
+                  Carregando...
+                </>
+              ) : (
+                "Carregar"
+              )}
             </button>
             <button
               type="button"
               onClick={handleVerMeuCalendario}
-              className="rounded-xl border border-slate-500/40 bg-slate-800/70 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-slate-700/70"
+              className="ui-button-secondary w-full sm:w-auto"
+              disabled={loading}
             >
-              Ver meu calendário
+              {loading && acaoCarregamento === "meu" ? (
+                <>
+                  <ButtonSpinner />
+                  Carregando...
+                </>
+              ) : (
+                "Ver meu calendário"
+              )}
             </button>
           </div>
 
           {buscandoUsuarios && (
-            <p className="text-sm text-slate-300">Buscando usuários cadastrados...</p>
+            <p className="flex items-center gap-2 text-sm text-slate-300">
+              <ButtonSpinner />
+              Buscando usuários cadastrados...
+            </p>
           )}
 
           {!buscandoUsuarios && usuariosFiltrados.length > 0 && (
@@ -325,7 +350,7 @@ export default function CalendarioDex() {
                   <button
                     type="button"
                     onClick={() => handleSelecionarUsuario(item.usuario)}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-100 transition hover:bg-cyan-300/20"
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-100 transition hover:bg-cyan-300/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/55"
                   >
                     {item.usuario}
                   </button>
