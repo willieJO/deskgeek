@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../utils/api";
+import ButtonSpinner from "../components/ButtonSpinner";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -111,54 +112,65 @@ export default function Register() {
             />
           </div>
 
-          <div className="relative">
+          <div>
             <label className="ui-label" htmlFor="password">
               Senha
             </label>
-            <input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              placeholder="Crie uma senha"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              className="ui-input pr-11"
-              required
-            />
-            <button
-              type="button"
-              className="absolute right-3 top-[2.18rem] text-slate-400 transition hover:text-cyan-200"
-              onClick={() => setShowPassword(!showPassword)}
-              aria-label="Mostrar ou ocultar senha"
-            >
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Crie uma senha"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                className="ui-input pr-12"
+                required
+              />
+              <button
+                type="button"
+                className="ui-icon-button absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label="Mostrar ou ocultar senha"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
-          <div className="relative">
+          <div>
             <label className="ui-label" htmlFor="confirm-password">
               Confirmar senha
             </label>
-            <input
-              id="confirm-password"
-              type={showPassword ? "text" : "password"}
-              placeholder="Repita sua senha"
-              value={confirmSenha}
-              onChange={(e) => setConfirmSenha(e.target.value)}
-              className="ui-input pr-11"
-              required
-            />
-            <button
-              type="button"
-              className="absolute right-3 top-[2.18rem] text-slate-400 transition hover:text-cyan-200"
-              onClick={() => setShowPassword(!showPassword)}
-              aria-label="Mostrar ou ocultar confirmação de senha"
-            >
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
+            <div className="relative">
+              <input
+                id="confirm-password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Repita sua senha"
+                value={confirmSenha}
+                onChange={(e) => setConfirmSenha(e.target.value)}
+                className="ui-input pr-12"
+                required
+              />
+              <button
+                type="button"
+                className="ui-icon-button absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label="Mostrar ou ocultar confirmação de senha"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
           <button type="submit" className="ui-button w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Registrando..." : "Registrar"}
+            {isSubmitting ? (
+              <>
+                <ButtonSpinner />
+                Registrando...
+              </>
+            ) : (
+              "Registrar"
+            )}
           </button>
         </form>
 

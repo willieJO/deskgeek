@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AuthenticatedLayout from "./components/AuthenticatedLayout";
+import ButtonSpinner from "./components/ButtonSpinner";
 import "./index.css";
 import AnimeTracker from "./pages/AnimeTracker";
 import CalendarioDex from "./pages/CalendarioDex";
@@ -35,7 +36,20 @@ function App() {
     checkAuth();
   }, []);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="auth-shell">
+        <div className="auth-card page-surface fade-slide-in text-center">
+          <p className="section-tag mx-auto">MediaDex</p>
+          <h1 className="section-title text-2xl">Preparando sua sessão</h1>
+          <p className="section-subtitle mt-3">Verificando autenticação...</p>
+          <div className="mt-6 flex justify-center text-cyan-200">
+            <ButtonSpinner className="ui-inline-spinner-lg" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <BrowserRouter>

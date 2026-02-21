@@ -13,6 +13,7 @@ import {
   Typography,
   Chip,
 } from "@mui/material";
+import ButtonSpinner from "../components/ButtonSpinner";
 import api from "../utils/api";
 import { toast } from "react-toastify";
 
@@ -95,6 +96,8 @@ export function TabelaDex() {
   const [urlInput, setUrlInput] = useState("");
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchData = async () => {
     const token = localStorage.getItem("token");
@@ -123,8 +126,9 @@ export function TabelaDex() {
   };
 
   const handleSave = async () => {
-    if (!selectedItem) return;
+    if (!selectedItem || isSavingEdit) return;
 
+    setIsSavingEdit(true);
     try {
       const token = localStorage.getItem("token");
 
@@ -160,6 +164,8 @@ export function TabelaDex() {
       fetchData();
     } catch {
       toast.error("Erro ao salvar alterações.");
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -169,8 +175,9 @@ export function TabelaDex() {
   };
 
   const handleConfirmDelete = async () => {
-    if (!itemToDelete) return;
+    if (!itemToDelete || isDeleting) return;
 
+    setIsDeleting(true);
     try {
       const token = localStorage.getItem("token");
       await api.delete(`/MediaDex/${itemToDelete.id}`, {
@@ -182,6 +189,8 @@ export function TabelaDex() {
       fetchData();
     } catch {
       toast.error("Erro ao remover obra.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -256,10 +265,18 @@ export function TabelaDex() {
       enableSorting: false,
       Cell: ({ row }) => (
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => handleEdit(row.original)} className="ui-button-secondary text-sm">
+          <button
+            onClick={() => handleEdit(row.original)}
+            className="ui-button-secondary text-sm"
+            disabled={isLoading || isSavingEdit || isDeleting}
+          >
             Editar
           </button>
-          <button onClick={() => handleDeleteClick(row.original)} className="ui-button-danger text-sm">
+          <button
+            onClick={() => handleDeleteClick(row.original)}
+            className="ui-button-danger text-sm"
+            disabled={isLoading || isSavingEdit || isDeleting}
+          >
             Remover
           </button>
         </div>
@@ -326,7 +343,10 @@ export function TabelaDex() {
 
         <Dialog
           open={openModal}
-          onClose={() => setOpenModal(false)}
+          onClose={(_, reason) => {
+            if (isSavingEdit && (reason === "backdropClick" || reason === "escapeKeyDown")) return;
+            setOpenModal(false);
+          }}
           maxWidth="sm"
           fullWidth
           PaperProps={{
@@ -360,7 +380,13 @@ export function TabelaDex() {
               />
             </div>
 
-            <Button variant="outlined" component="label" color="primary" sx={{ mt: 1 }}>
+            <Button
+              variant="outlined"
+              component="label"
+              color="primary"
+              sx={{ mt: 1 }}
+              disabled={isSavingEdit}
+            >
               Upload imagem
               <input
                 type="file"
@@ -380,6 +406,7 @@ export function TabelaDex() {
                 setUrlInput(e.target.value);
                 setFile(null);
               }}
+              disabled={isSavingEdit}
               fullWidth
             />
 
@@ -387,6 +414,7 @@ export function TabelaDex() {
               label="Nome"
               value={selectedItem?.nome || ""}
               onChange={(e) => setSelectedItem({ ...selectedItem, nome: e.target.value })}
+              disabled={isSavingEdit}
               fullWidth
             />
 
@@ -395,6 +423,7 @@ export function TabelaDex() {
               label="Tipo"
               value={selectedItem?.tipoMidia || ""}
               onChange={(e) => setSelectedItem({ ...selectedItem, tipoMidia: e.target.value })}
+              disabled={isSavingEdit}
               fullWidth
             >
               <MenuItem value="">Não definido</MenuItem>
@@ -415,6 +444,7 @@ export function TabelaDex() {
                   totalCapitulos: e.target.value === "" ? null : Number(e.target.value),
                 })
               }
+              disabled={isSavingEdit}
               fullWidth
             />
 
@@ -428,6 +458,7 @@ export function TabelaDex() {
                   capituloAtual: e.target.value,
                 })
               }
+              disabled={isSavingEdit}
               fullWidth
             />
 
@@ -441,6 +472,7 @@ export function TabelaDex() {
                   diaNovoCapitulo: e.target.value,
                 })
               }
+              disabled={isSavingEdit}
               fullWidth
             >
               {diasSemana.map((dia) => (
@@ -455,6 +487,7 @@ export function TabelaDex() {
               label="Status"
               value={selectedItem?.status || ""}
               onChange={(e) => setSelectedItem({ ...selectedItem, status: e.target.value })}
+              disabled={isSavingEdit}
               fullWidth
             >
               {statusOpcoes.map((st) => (
@@ -465,18 +498,28 @@ export function TabelaDex() {
             </TextField>
           </DialogContent>
           <DialogActions sx={{ px: 3, py: 2 }}>
-            <Button onClick={() => setOpenModal(false)} color="inherit">
+            <Button onClick={() => setOpenModal(false)} color="inherit" disabled={isSavingEdit}>
               Cancelar
             </Button>
-            <Button onClick={handleSave} variant="contained" color="primary">
-              Salvar
+            <Button onClick={handleSave} variant="contained" color="primary" disabled={isSavingEdit}>
+              {isSavingEdit ? (
+                <>
+                  <ButtonSpinner />
+                  Salvando...
+                </>
+              ) : (
+                "Salvar"
+              )}
             </Button>
           </DialogActions>
         </Dialog>
 
         <Dialog
           open={openDeleteModal}
-          onClose={() => setOpenDeleteModal(false)}
+          onClose={(_, reason) => {
+            if (isDeleting && (reason === "backdropClick" || reason === "escapeKeyDown")) return;
+            setOpenDeleteModal(false);
+          }}
           maxWidth="xs"
           fullWidth
           PaperProps={{
@@ -493,11 +536,18 @@ export function TabelaDex() {
             </Typography>
           </DialogContent>
           <DialogActions sx={{ px: 3, py: 2 }}>
-            <Button onClick={() => setOpenDeleteModal(false)} color="inherit">
+            <Button onClick={() => setOpenDeleteModal(false)} color="inherit" disabled={isDeleting}>
               Cancelar
             </Button>
-            <Button onClick={handleConfirmDelete} variant="contained" color="error">
-              Remover
+            <Button onClick={handleConfirmDelete} variant="contained" color="error" disabled={isDeleting}>
+              {isDeleting ? (
+                <>
+                  <ButtonSpinner />
+                  Removendo...
+                </>
+              ) : (
+                "Remover"
+              )}
             </Button>
           </DialogActions>
         </Dialog>

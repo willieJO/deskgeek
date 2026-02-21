@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { request, gql } from "graphql-request";
 import api from "../utils/api";
+import ButtonSpinner from "../components/ButtonSpinner";
 import { toast } from "react-toastify";
 
 const anilistEndpoint = "https://graphql.anilist.co";
@@ -127,6 +128,7 @@ export default function MediaTracker() {
   const [novoCapituloAtual, setNovoCapituloAtual] = useState("");
   const [diaNovosCapitulos, setDiaNovosCapitulos] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   async function buscarAnilist(search, type) {
     if (!search) return [];
@@ -254,34 +256,50 @@ export default function MediaTracker() {
   }
 
   useEffect(() => {
+    let ativo = true;
+
     const delayDebounce = setTimeout(async () => {
       if (busca.length < 2) {
-        setSugestoes([]);
+        if (ativo) {
+          setSugestoes([]);
+          setCriandoNovo(false);
+          setIsSearching(false);
+        }
+        return;
+      }
+
+      if (ativo) {
         setCriandoNovo(false);
-        return;
+        setIsSearching(true);
       }
 
-      setCriandoNovo(false);
+      try {
+        let resultados = [];
 
-      if (tipo === "MANHUA") {
-        setSugestoes(await buscarManhua(busca));
-        return;
+        if (tipo === "MANHUA") {
+          resultados = await buscarManhua(busca);
+        } else if (tipo === "SERIE") {
+          resultados = await buscarSeries(busca);
+        } else if (tipo === "FILME") {
+          resultados = await buscarFilmes(busca);
+        } else {
+          resultados = await buscarAnilist(busca, tipo);
+        }
+
+        if (ativo) {
+          setSugestoes(resultados);
+        }
+      } finally {
+        if (ativo) {
+          setIsSearching(false);
+        }
       }
-
-      if (tipo === "SERIE") {
-        setSugestoes(await buscarSeries(busca));
-        return;
-      }
-
-      if (tipo === "FILME") {
-        setSugestoes(await buscarFilmes(busca));
-        return;
-      }
-
-      setSugestoes(await buscarAnilist(busca, tipo));
     }, 300);
 
-    return () => clearTimeout(delayDebounce);
+    return () => {
+      ativo = false;
+      clearTimeout(delayDebounce);
+    };
   }, [busca, tipo]);
 
   const handleSelecionar = (item) => {
@@ -321,6 +339,7 @@ export default function MediaTracker() {
     setSelecionado(null);
     setUltimaSelecaoValida(null);
     setSugestoes([]);
+    setIsSearching(false);
     setBusca("");
     setCriandoNovo(false);
     setCapituloAtual("");
@@ -329,6 +348,8 @@ export default function MediaTracker() {
   };
 
   async function handleEnviar() {
+    if (isSaving) return;
+
     const itemSelecionado = selecionado || ultimaSelecaoValida;
 
     if (!criandoNovo && !itemSelecionado) {
@@ -462,7 +483,7 @@ export default function MediaTracker() {
                     <li key={item.id}>
                       <button
                         onClick={() => handleSelecionar(item)}
-                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-cyan-300/15"
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-cyan-300/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"
                       >
                         <img
                           src={normalizeCover(item.coverImage?.medium)}
@@ -478,6 +499,10 @@ export default function MediaTracker() {
                     </li>
                   ))}
                 </ul>
+              )}
+
+              {isSearching && !itemSelecionado && !criandoNovo && (
+                <p className="mt-2 text-sm text-slate-300">Buscando sugestões...</p>
               )}
             </div>
           </div>
@@ -595,13 +620,26 @@ export default function MediaTracker() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <button onClick={handleEnviar} className="ui-button w-full" type="button">
-                {isSaving ? "Salvando..." : `Salvar novo ${getTipoLabel(tipo).toLowerCase()}`}
+              <button
+                onClick={handleEnviar}
+                className="ui-button w-full"
+                type="button"
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <>
+                    <ButtonSpinner />
+                    Salvando...
+                  </>
+                ) : (
+                  `Salvar novo ${getTipoLabel(tipo).toLowerCase()}`
+                )}
               </button>
               <button
                 onClick={() => setCriandoNovo(false)}
                 className="ui-button-secondary w-full"
                 type="button"
+                disabled={isSaving}
               >
                 Cancelar
               </button>
@@ -681,8 +719,20 @@ export default function MediaTracker() {
               </select>
             </div>
 
-            <button onClick={handleEnviar} className="ui-button w-full" type="button">
-              {isSaving ? "Salvando..." : "Salvar"}
+            <button
+              onClick={handleEnviar}
+              className="ui-button w-full"
+              type="button"
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <ButtonSpinner />
+                  Salvando...
+                </>
+              ) : (
+                "Salvar"
+              )}
             </button>
           </section>
         )}

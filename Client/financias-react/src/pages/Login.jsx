@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ButtonSpinner from "../components/ButtonSpinner";
 import api from "../utils/api";
 
 export default function Login({ onLogin }) {
@@ -80,7 +81,14 @@ export default function Login({ onLogin }) {
           </div>
 
           <button type="submit" className="ui-button w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Entrando..." : "Entrar"}
+            {isSubmitting ? (
+              <>
+                <ButtonSpinner />
+                Entrando...
+              </>
+            ) : (
+              "Entrar"
+            )}
           </button>
         </form>
 
