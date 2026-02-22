@@ -22,20 +22,16 @@ using System.Text;
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
-var builder = WebApplication.CreateBuilder(new WebApplicationOptions
-{
-    Args = args,
-    WebRootPath = "wwwroot",
-    ContentRootPath = Directory.GetCurrentDirectory(),
-    ApplicationName = typeof(Program).Assembly.FullName,
-    EnvironmentName = Environments.Production,
-});
+var builder = WebApplication.CreateBuilder(args);
 
 ConformitySettings.ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 var allowedCorsOrigins = new[]
 {
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:4173",
+    "http://127.0.0.1:4173",
     "https://mediadex.devporwillie.shop",
     "http://mediadex.devporwillie.shop",
     "https://www.mediadex.devporwillie.shop",
@@ -163,6 +159,13 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+if (app.Environment.IsEnvironment("E2E"))
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseDeveloperExceptionPage();
