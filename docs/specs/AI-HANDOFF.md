@@ -21,6 +21,10 @@ Este e o ponto de entrada recomendado para um agente de IA analisar e desenvolve
 - Passo 4: passe `API-CONTRACTS.md` para manter compatibilidade de contrato.
 - Passo 5: passe `ARCHITECTURE-OVERVIEW.md` para preservar decisoes tecnicas atuais.
 
+## Testes backend (API)
+- Projeto: `tests/deskgeek.Backend.Tests`
+- Execucao local: `run-backend-tests.bat` (Windows) ou `./run-backend-tests.sh` (bash)
+
 ## Escopo atual das rotas ativas
 - `/login`
 - `/register`

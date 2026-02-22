@@ -19,9 +19,11 @@ namespace deskgeek.Presentation
     {
         private const string AuthCookieName = "AuthToken";
         private readonly IMediator _mediator;
-        public UsuarioController(IMediator mediator)
+        private readonly IHostEnvironment _hostEnvironment;
+        public UsuarioController(IMediator mediator, IHostEnvironment hostEnvironment)
         {
             _mediator = mediator;
+            _hostEnvironment = hostEnvironment;
         }
         [HttpPost("register")]
         public async Task<IActionResult> CriarUsuario([FromBody] UsuarioCommand command)
@@ -87,11 +89,12 @@ namespace deskgeek.Presentation
                 );
 
                 var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+                var secureCookie = !_hostEnvironment.IsEnvironment("E2E");
 
                 Response.Cookies.Append(AuthCookieName, tokenString, new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = true, 
+                    Secure = secureCookie,
                     SameSite = SameSiteMode.Strict,
                     Path = "/",
                     Expires = DateTime.UtcNow.AddDays(7)

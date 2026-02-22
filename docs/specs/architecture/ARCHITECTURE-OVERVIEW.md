@@ -24,6 +24,12 @@
 - Contratos de media aceitam JSON e multipart para edicao.
 - Integracao externa distribuida entre front (AniList/TVMaze/Wikipedia) e back proxy (MangaDex).
 
+## Stack de testes backend
+- Framework: xUnit
+- Projeto: `tests/deskgeek.Backend.Tests`
+- Execucao local: `run-backend-tests.bat` ou `./run-backend-tests.sh`
+- CI: `.github/workflows/tests-backend.yml`
+
 ## Principais dividas tecnicas observadas
 - Inconsistencia entre cookie auth e uso residual de `localStorage token` em alguns requests.
 - Campos de progresso de media modelados como `string` no dominio.
