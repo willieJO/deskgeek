@@ -77,6 +77,33 @@ export default function CalendarioDex() {
   const [buscandoUsuarios, setBuscandoUsuarios] = useState(false);
   const [acaoCarregamento, setAcaoCarregamento] = useState("");
   const cacheBuscaUsuarios = useRef(new Map());
+  const hoverPreviewCardRef = useRef(null);
+  const hoverPreviewRafRef = useRef(null);
+  const hoverPreviewNextPosRef = useRef(null);
+
+  const cancelHoverPreviewFrame = () => {
+    if (hoverPreviewRafRef.current != null) {
+      window.cancelAnimationFrame(hoverPreviewRafRef.current);
+      hoverPreviewRafRef.current = null;
+    }
+  };
+
+  const queueHoverPreviewPosition = (clientX, clientY) => {
+    hoverPreviewNextPosRef.current = getHoverPreviewPosition(clientX, clientY);
+
+    if (hoverPreviewRafRef.current != null) return;
+
+    hoverPreviewRafRef.current = window.requestAnimationFrame(() => {
+      hoverPreviewRafRef.current = null;
+
+      const node = hoverPreviewCardRef.current;
+      const pos = hoverPreviewNextPosRef.current;
+      if (!node || !pos) return;
+
+      node.style.left = `${pos.left}px`;
+      node.style.top = `${pos.top}px`;
+    });
+  };
 
   useEffect(() => {
     setFiltroUsuario(usuarioSelecionado);
@@ -186,7 +213,11 @@ export default function CalendarioDex() {
   }, [filtroUsuario]);
 
   useEffect(() => {
-    const clearHoverPreview = () => setHoverPreview(null);
+    const clearHoverPreview = () => {
+      cancelHoverPreviewFrame();
+      hoverPreviewNextPosRef.current = null;
+      setHoverPreview(null);
+    };
 
     window.addEventListener("resize", clearHoverPreview);
     window.addEventListener("scroll", clearHoverPreview, true);
@@ -196,6 +227,8 @@ export default function CalendarioDex() {
       window.removeEventListener("scroll", clearHoverPreview, true);
     };
   }, []);
+
+  useEffect(() => () => cancelHoverPreviewFrame(), []);
 
   const quantidadePorDia = useMemo(() => {
     const porDia = {};
@@ -216,6 +249,8 @@ export default function CalendarioDex() {
   const handleEventMouseEnter = (mouseEvent, eventInfo) => {
     const { left, top } = getHoverPreviewPosition(mouseEvent.clientX, mouseEvent.clientY);
     const dayIndex = eventInfo.event.extendedProps.dayIndex;
+    cancelHoverPreviewFrame();
+    hoverPreviewNextPosRef.current = { left, top };
 
     setHoverPreview({
       left,
@@ -227,14 +262,13 @@ export default function CalendarioDex() {
   };
 
   const handleEventMouseMove = (mouseEvent) => {
-    setHoverPreview((prev) => {
-      if (!prev) return prev;
-      const { left, top } = getHoverPreviewPosition(mouseEvent.clientX, mouseEvent.clientY);
-      return { ...prev, left, top };
-    });
+    if (!hoverPreviewCardRef.current) return;
+    queueHoverPreviewPosition(mouseEvent.clientX, mouseEvent.clientY);
   };
 
   const handleEventMouseLeave = () => {
+    cancelHoverPreviewFrame();
+    hoverPreviewNextPosRef.current = null;
     setHoverPreview(null);
   };
 
@@ -412,6 +446,7 @@ export default function CalendarioDex() {
       {hoverPreview && (
         <div className="cal-hover-preview-layer" aria-hidden="true">
           <article
+            ref={hoverPreviewCardRef}
             className="cal-hover-preview"
             style={{ left: `${hoverPreview.left}px`, top: `${hoverPreview.top}px` }}
           >

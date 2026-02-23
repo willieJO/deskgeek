@@ -60,13 +60,13 @@ export default function AuthenticatedLayout({ onLogout }) {
     <div className="app-shell text-slate-100">
       <div
         onClick={() => setMobileOpen(false)}
-        className={`fixed inset-0 z-30 bg-slate-950/70 backdrop-blur-sm transition lg:hidden ${
+        className={`fixed inset-0 z-30 bg-slate-950/70 transition lg:hidden ${
           mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       />
 
       <aside
-        className={`fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-slate-600/35 bg-[rgba(9,18,34,0.95)] px-3 py-5 shadow-2xl backdrop-blur transition-all duration-300 ${
+        className={`fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-slate-600/35 bg-[rgba(9,18,34,0.98)] px-3 py-5 shadow-2xl transition-transform duration-300 ${
           sidebarExpanded ? "lg:w-72" : "lg:w-24"
         } ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
       >
@@ -135,11 +135,11 @@ export default function AuthenticatedLayout({ onLogout }) {
       </aside>
 
       <main
-        className={`min-h-screen transition-all duration-300 ${
+        className={`min-h-screen ${
           sidebarExpanded ? "lg:ml-72" : "lg:ml-24"
         }`}
       >
-        <header className="sticky top-0 z-20 border-b border-slate-700/35 bg-[rgba(8,14,27,0.8)] px-4 py-3 backdrop-blur-lg sm:px-6">
+        <header className="sticky top-0 z-20 border-b border-slate-700/35 bg-[rgba(8,14,27,0.96)] px-4 py-3 sm:px-6">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <button
