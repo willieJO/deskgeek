@@ -40,7 +40,7 @@ body {
     radial-gradient(circle at 88% 20%, rgba(251, 191, 36, 0.12), transparent 42%),
     radial-gradient(circle at 50% 96%, rgba(96, 165, 250, 0.12), transparent 38%),
     linear-gradient(160deg, #060c19 0%, #111a2f 42%, #080d1b 100%);
-  background-attachment: fixed;
+  background-attachment: scroll;
 }
 
 body::before,
@@ -50,7 +50,6 @@ body::after {
   z-index: -1;
   pointer-events: none;
   border-radius: 999px;
-  filter: blur(70px);
 }
 
 body::before {
@@ -58,7 +57,12 @@ body::before {
   height: 280px;
   top: -130px;
   left: -100px;
-  background: rgba(34, 211, 238, 0.25);
+  background: radial-gradient(
+    circle at center,
+    rgba(34, 211, 238, 0.2) 0%,
+    rgba(34, 211, 238, 0.12) 42%,
+    rgba(34, 211, 238, 0) 76%
+  );
 }
 
 body::after {
@@ -66,7 +70,12 @@ body::after {
   height: 320px;
   right: -120px;
   bottom: -140px;
-  background: rgba(96, 165, 250, 0.2);
+  background: radial-gradient(
+    circle at center,
+    rgba(96, 165, 250, 0.18) 0%,
+    rgba(96, 165, 250, 0.1) 42%,
+    rgba(96, 165, 250, 0) 76%
+  );
 }
 
 #root {
@@ -90,13 +99,12 @@ input[type="number"]::-webkit-outer-spin-button {
 .page-surface {
   background: linear-gradient(
     155deg,
-    rgba(17, 28, 50, 0.82) 0%,
-    rgba(11, 20, 38, 0.78) 100%
+    rgba(17, 28, 50, 0.94) 0%,
+    rgba(11, 20, 38, 0.92) 100%
   );
   border: 1px solid var(--surface-border);
   border-radius: 1.1rem;
   box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(10px);
 }
 
 .section-tag {
