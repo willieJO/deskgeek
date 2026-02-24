@@ -23,6 +23,8 @@
 - Sessao por cookie HttpOnly em vez de token no front.
 - Contratos de media aceitam JSON e multipart para edicao.
 - Integracao externa distribuida entre front (AniList/TVMaze/Wikipedia) e back proxy (MangaDex).
+- `MediaDex` possui `urlMidia` opcional para uso pessoal (assistir/ler).
+- Endpoints de calendario usam contrato reduzido sem `urlMidia` para evitar exposicao em consultas por username.
 
 ## Stack de testes backend
 - Framework: xUnit

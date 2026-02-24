@@ -30,6 +30,7 @@ Tela de gestão da biblioteca com tabela rica (filtros, ações e modal de ediç
 - `diaNovoCapitulo`
 - `status`
 - `imagemUrl` ou `ImagemUpload`
+- `urlMidia` (opcional)
 
 ## 6. Critérios de aceite
 - `AC-MO-001`: lista é carregada sem erro para usuário autenticado.
@@ -37,6 +38,8 @@ Tela de gestão da biblioteca com tabela rica (filtros, ações e modal de ediç
 - `AC-MO-003`: remoção remove item da listagem após confirmação.
 - `AC-MO-004`: fallback de imagem é aplicado quando sem capa.
 - `AC-MO-005`: erro em operação mostra toast apropriado.
+- `AC-MO-006`: botão `Abrir link` aparece somente para registros com `urlMidia`.
+- `AC-MO-007`: edição persiste `urlMidia` via JSON e multipart.
 
 ## 7. Referências front/back
 - Front: `Client/financias-react/src/pages/TabelaDex.jsx`

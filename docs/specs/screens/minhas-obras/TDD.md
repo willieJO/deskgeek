@@ -45,9 +45,10 @@
 - `diaNovoCapitulo`
 - `status`
 - `tipoMidia`
+- `urlMidia`
 
 ### Payload JSON (edição sem arquivo)
-- objeto `selectedItem` com `imagemUrl` atualizado.
+- objeto `selectedItem` com `imagemUrl` e `urlMidia` atualizados.
 
 ## 5. Sequência técnica resumida
 1. `fetchData` carrega acervo do usuário.
@@ -61,6 +62,7 @@
 - `DELETE` no backend remove por ID sem validar propriedade do usuário.
 - Campos numéricos permanecem string no domínio.
 - Em upload, campo `setUrlInput` existe por compatibilidade e aumenta acoplamento front/back.
+- Nova acao `Abrir link` depende da qualidade/validade de `urlMidia` persistida.
 
 ## 7. Casos técnicos de teste recomendados
 - `TC-MO-001`: editar registro usando JSON.
@@ -68,3 +70,6 @@
 - `TC-MO-003`: remover registro e validar atualização na tabela.
 - `TC-MO-004`: validar rejeição de edição sem nome (validator back).
 - `TC-MO-005`: validar segurança de exclusão por usuário (teste de autorização).
+- `TC-MO-006`: editar `urlMidia` via JSON.
+- `TC-MO-007`: editar `urlMidia` via multipart.
+- `TC-MO-008`: botão `Abrir link` oculto quando `urlMidia` inexistente.

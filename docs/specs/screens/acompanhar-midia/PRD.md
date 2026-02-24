@@ -34,6 +34,7 @@ Tela principal de entrada de obras. Combina busca externa + formulário de grava
   - `DiaNovoCapitulo`
   - `ImagemUpload` (arquivo opcional)
   - `imagemUrl` (URL opcional)
+  - `urlMidia` (URL opcional para assistir/ler)
 - Para filme:
   - `TotalCapitulos` default `1`.
   - `CapituloAtual` e `DiaNovoCapitulo` não aplicáveis.
@@ -49,6 +50,8 @@ Tela principal de entrada de obras. Combina busca externa + formulário de grava
 - `AC-AM-003`: obra salva aparece nas consultas de biblioteca.
 - `AC-AM-004`: erro de API exibe toast de falha.
 - `AC-AM-005`: filmes não exibem campos de capítulo/dia.
+- `AC-AM-006`: usuário pode salvar obra com `urlMidia` opcional.
+- `AC-AM-007`: salvar sem `urlMidia` continua funcionando.
 
 ## 8. Referências front/back
 - Front: `Client/financias-react/src/pages/AnimeTracker.jsx`

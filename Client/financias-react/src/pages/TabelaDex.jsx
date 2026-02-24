@@ -142,6 +142,7 @@ export function TabelaDex() {
         formData.append("diaNovoCapitulo", selectedItem.diaNovoCapitulo);
         formData.append("status", selectedItem.status);
         formData.append("tipoMidia", selectedItem.tipoMidia || "");
+        formData.append("urlMidia", selectedItem.urlMidia || "");
 
         await api.put(`/MediaDex/${selectedItem.id}`, formData, {
           headers: {
@@ -153,6 +154,7 @@ export function TabelaDex() {
         const payload = {
           ...selectedItem,
           imagemUrl: urlInput || null,
+          urlMidia: selectedItem.urlMidia || null,
         };
         await api.put(`/MediaDex/${selectedItem.id}`, payload, {
           headers: { Authorization: `Bearer ${token}` },
@@ -265,6 +267,16 @@ export function TabelaDex() {
       enableSorting: false,
       Cell: ({ row }) => (
         <div className="flex flex-wrap gap-2">
+          {row.original.urlMidia ? (
+            <a
+              href={row.original.urlMidia}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ui-button-secondary text-sm"
+            >
+              Abrir link
+            </a>
+          ) : null}
           <button
             onClick={() => handleEdit(row.original)}
             className="ui-button-secondary text-sm"
@@ -496,6 +508,21 @@ export function TabelaDex() {
                 </MenuItem>
               ))}
             </TextField>
+
+            <TextField
+              label="URL para assistir/ler (opcional)"
+              type="url"
+              placeholder="https://..."
+              value={selectedItem?.urlMidia || ""}
+              onChange={(e) =>
+                setSelectedItem({
+                  ...selectedItem,
+                  urlMidia: e.target.value,
+                })
+              }
+              disabled={isSavingEdit}
+              fullWidth
+            />
           </DialogContent>
           <DialogActions sx={{ px: 3, py: 2 }}>
             <Button onClick={() => setOpenModal(false)} color="inherit" disabled={isSavingEdit}>

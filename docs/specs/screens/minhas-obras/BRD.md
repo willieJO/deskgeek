@@ -11,8 +11,10 @@ Permitir consulta, edição e remoção das obras do usuário em uma visão tabu
 - `BRD-MO-001`: carregar todas as mídias do usuário autenticado.
 - `BRD-MO-002`: permitir edição dos campos principais da obra.
 - `BRD-MO-003`: permitir troca de imagem por upload ou URL.
+- `BRD-MO-003A`: permitir editar `urlMidia` opcional da obra.
 - `BRD-MO-004`: permitir remoção definitiva da obra com confirmação.
 - `BRD-MO-005`: exibir fallback de imagem quando não houver capa.
+- `BRD-MO-006`: exibir acao para abrir `urlMidia` somente quando o link existir.
 
 ## 4. Valor de negócio
 - Manutenção contínua da biblioteca.
@@ -36,3 +38,4 @@ Permitir consulta, edição e remoção das obras do usuário em uma visão tabu
 - Edição em lote.
 - Lixeira/soft delete.
 - Histórico de alterações.
+- Exibicao da `urlMidia` no calendario.

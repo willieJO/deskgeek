@@ -127,6 +127,7 @@ export default function MediaTracker() {
   const [novoStatus, setNovoStatus] = useState("Em andamento");
   const [novoCapituloAtual, setNovoCapituloAtual] = useState("");
   const [diaNovosCapitulos, setDiaNovosCapitulos] = useState("");
+  const [urlMidia, setUrlMidia] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -310,6 +311,7 @@ export default function MediaTracker() {
     setCriandoNovo(false);
     setCapituloAtual("");
     setStatus("Em andamento");
+    setUrlMidia("");
   };
 
   const handleImagemChange = (e) => {
@@ -333,6 +335,7 @@ export default function MediaTracker() {
     setNovoCapituloAtual("");
     setSelecionado(null);
     setUltimaSelecaoValida(null);
+    setUrlMidia("");
   };
 
   const resetSearchState = () => {
@@ -345,6 +348,7 @@ export default function MediaTracker() {
     setCapituloAtual("");
     setStatus("Em andamento");
     setDiaNovosCapitulos("");
+    setUrlMidia("");
   };
 
   async function handleEnviar() {
@@ -392,6 +396,9 @@ export default function MediaTracker() {
     formData.append("CapituloAtual", capAtualEnviar === "" ? "" : String(capAtualEnviar));
     formData.append("Status", statusAtual);
     formData.append("DiaNovoCapitulo", isTipoFilme(tipo) ? "" : diaNovosCapitulos);
+    if (urlMidia.trim()) {
+      formData.append("urlMidia", urlMidia.trim());
+    }
 
     if (criandoNovo && novaImagemFile) {
       formData.append("ImagemUpload", novaImagemFile);
@@ -408,6 +415,7 @@ export default function MediaTracker() {
       });
 
       if (res.status === 200) {
+        setUrlMidia("");
         toast.success("Cadastro realizado com sucesso.");
         setTimeout(() => {
           window.location.reload();
@@ -474,6 +482,7 @@ export default function MediaTracker() {
                   setCriandoNovo(false);
                   setCapituloAtual("");
                   setStatus("Em andamento");
+                  setUrlMidia("");
                 }}
               />
 
@@ -527,6 +536,17 @@ export default function MediaTracker() {
                 className="ui-input"
                 value={novoTitulo}
                 onChange={(e) => setNovoTitulo(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="ui-label">URL para assistir/ler (opcional)</label>
+              <input
+                type="url"
+                placeholder="https://..."
+                className="ui-input"
+                value={urlMidia}
+                onChange={(e) => setUrlMidia(e.target.value)}
               />
             </div>
 
@@ -702,6 +722,17 @@ export default function MediaTracker() {
                   </select>
                 </div>
               )}
+            </div>
+
+            <div>
+              <label className="ui-label">URL para assistir/ler (opcional)</label>
+              <input
+                type="url"
+                placeholder="https://..."
+                className="ui-input"
+                value={urlMidia}
+                onChange={(e) => setUrlMidia(e.target.value)}
+              />
             </div>
 
             <div>

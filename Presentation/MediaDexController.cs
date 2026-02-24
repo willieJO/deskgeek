@@ -1,4 +1,5 @@
 ﻿using deskgeek.Application.Commands;
+using deskgeek.Application.DTOs;
 using deskgeek.Application.Queries;
 using deskgeek.Shared;
 using FluentValidation;
@@ -47,7 +48,7 @@ namespace deskgeek.Presentation
             {
                 var id = Guid.Parse(userId);
                 var mediaDexList = await _mediator.Send(new MediaDexEmAndamentoQuery { Id = id });
-                return Ok(mediaDexList);
+                return Ok(MapCalendarioItems(mediaDexList));
             }
             return Unauthorized();
         }
@@ -69,7 +70,7 @@ namespace deskgeek.Presentation
             }
 
             var mediaDexList = await _mediator.Send(new MediaDexEmAndamentoQuery { Id = usuarioEncontrado.Id });
-            return Ok(mediaDexList);
+            return Ok(MapCalendarioItems(mediaDexList));
         }
 
 
@@ -240,7 +241,8 @@ namespace deskgeek.Presentation
                     TipoMidia = form["tipoMidia"].ToString(),
                     ImagemUpload = form.Files.GetFile("ImagemUpload"),
                     ImagemDirectory = form["imagemDirectory"].ToString(),
-                    imagemUrl = string.IsNullOrWhiteSpace(imagemUrl) ? null : imagemUrl
+                    imagemUrl = string.IsNullOrWhiteSpace(imagemUrl) ? null : imagemUrl,
+                    UrlMidia = form["urlMidia"].ToString()
                 };
             }
             else if (Request.ContentType?.Contains("json", StringComparison.OrdinalIgnoreCase) == true)
@@ -302,6 +304,19 @@ namespace deskgeek.Presentation
             {
                 return BadRequest("Erro interno");
             }
+        }
+
+        private static List<MediaDexCalendarioItemDto> MapCalendarioItems(IEnumerable<deskgeek.Domain.MediaDex> mediaDexList)
+        {
+            return mediaDexList.Select(item => new MediaDexCalendarioItemDto
+            {
+                Id = item.Id,
+                Nome = item.Nome,
+                Status = item.Status,
+                DiaNovoCapitulo = item.DiaNovoCapitulo,
+                ImagemDirectory = item.ImagemDirectory,
+                imagemUrl = item.imagemUrl
+            }).ToList();
         }
 
     }

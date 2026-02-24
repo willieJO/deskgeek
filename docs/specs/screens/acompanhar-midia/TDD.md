@@ -49,6 +49,7 @@
   - `DiaNovoCapitulo`
   - `ImagemUpload` (arquivo)
   - `imagemUrl` (texto)
+  - `urlMidia` (texto opcional, URL pessoal)
 
 ## 6. Sequência técnica resumida
 1. Usuário define tipo + termo.
@@ -63,6 +64,7 @@
 - `TotalCapitulos`, `CapituloAtual` e `DiaNovoCapitulo` são `string` no domínio, sem tipagem forte.
 - Fallback para filme força total `1`; não há validação semântica no backend.
 - Validator de criação exige apenas nome; demais regras ficam no front.
+- `urlMidia` passa a ter validacao backend condicional (`http/https`, max 2048).
 
 ## 8. Casos técnicos de teste recomendados
 - `TC-AM-001`: salvar mídia com seleção de sugestão externa.
@@ -70,3 +72,5 @@
 - `TC-AM-003`: salvar filme sem capítulo/dia.
 - `TC-AM-004`: validar associação do `UserId` pelo token.
 - `TC-AM-005`: falha de provider externo não deve quebrar UI.
+- `TC-AM-006`: salvar cadastro (manual/sugestao) com `urlMidia`.
+- `TC-AM-007`: rejeitar `urlMidia` inválida via backend (400).

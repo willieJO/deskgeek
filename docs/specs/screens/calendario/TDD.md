@@ -32,7 +32,7 @@
 - `GET /api/MediaDex/obterMediaPorUsuarioPorStatusEmAndamento`
 - `GET /api/MediaDex/obterMediaPorUsuarioPorStatusEmAndamentoPorUsuario?usuario=...`
 - `GET /api/Usuario/buscar?termo=...&limite=...`
-- Resposta esperada: array de `MediaDex` com campos `id`, `nome`, `status`, `diaNovoCapitulo`, `imagemDirectory`, `imagemUrl`.
+- Resposta esperada: array de DTO reduzido (sem `urlMidia`) com campos `id`, `nome`, `status`, `diaNovoCapitulo`, `imagemDirectory`, `imagemUrl`.
 
 ## 5. Sequência técnica resumida
 1. `useEffect` executa `fetchEventos`.
@@ -52,3 +52,4 @@
 - `TC-CAL-002`: dia com variação de acento é mapeado corretamente.
 - `TC-CAL-003`: resposta sem imagem usa placeholder.
 - `TC-CAL-004`: erro de API mantém tela estável sem crash.
+- `TC-CAL-005`: endpoints de calendario nao retornam `urlMidia` (privacidade).

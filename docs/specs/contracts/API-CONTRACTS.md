@@ -40,6 +40,7 @@ Retorna lista otimizada de usuários filtrados por prefixo, com campos `id` e `u
 ## MediaDex
 ### GET `/api/MediaDex/obterMediaPorUsuario` (Authorize)
 Retorna lista de `MediaDex` do usuario logado.
+Inclui campo opcional `urlMidia` (URL pessoal para assistir/ler).
 
 ### GET `/api/MediaDex/obterMediaPorUsuarioPorStatusEmAndamento` (Authorize)
 Retorna lista de `MediaDex` com status em andamento do usuario.
@@ -58,11 +59,13 @@ Campos aceitos:
 - `ImagemUpload`
 - `ImagemDirectory`
 - `imagemUrl`
+- `urlMidia` (opcional, URL pessoal para assistir/ler)
 
 ### PUT `/api/MediaDex/{id}` (Authorize)
 Aceita:
 - `multipart/form-data` (upload + campos)
 - `application/json` (edicao sem upload)
+- Campo opcional `urlMidia` em ambos os formatos.
 
 ### DELETE `/api/MediaDex/{id}` (Authorize)
 Remove registro por ID.
@@ -75,3 +78,7 @@ Proxy de busca MangaDex.
 
 ### GET `/api/MediaDex/mangadex/cover/{mangaId}/{fileName}`
 Proxy de capa MangaDex.
+
+## Observacao de privacidade (MediaDex)
+- O campo `urlMidia` e retornado apenas em `GET /api/MediaDex/obterMediaPorUsuario` (dono da conta).
+- Endpoints de calendario (`obterMediaPorUsuarioPorStatusEmAndamento*`) usam contrato reduzido e nao retornam `urlMidia`.

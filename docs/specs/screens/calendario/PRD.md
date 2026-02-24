@@ -12,6 +12,10 @@ Calendário mensal com eventos recorrentes por dia da semana para obras ativas.
 6. Converte obras em eventos do FullCalendar.
 7. Renderiza cards de evento com imagem e título.
 
+## 2.1 Privacidade de dados
+- O calendário nao exibe nem consome `urlMidia` (link pessoal para assistir/ler), mesmo quando o campo existe na mídia.
+- A mesma regra vale para consulta do calendário por `usuario`.
+
 ## 3. Regras de transformação
 - `diaNovoCapitulo` textual é mapeado para índice semanal (`0` a `6`).
 - Variações com acento são suportadas (`terça/terca`, `sábado/sabado`).
@@ -29,6 +33,7 @@ Calendário mensal com eventos recorrentes por dia da semana para obras ativas.
 - `AC-CAL-004`: falha de API não quebra renderização da página.
 - `AC-CAL-005`: ao informar `usuario` válido, a tela exibe o calendário do usuário selecionado.
 - `AC-CAL-006`: ao digitar no campo de usuário, a tela exibe sugestões filtradas de usuários cadastrados.
+- `AC-CAL-007`: respostas de calendário não expõem `urlMidia`.
 
 ## 6. Referências front/back
 - Front: `Client/financias-react/src/pages/CalendarioDex.jsx`, `Client/financias-react/src/pages/calendario.css`

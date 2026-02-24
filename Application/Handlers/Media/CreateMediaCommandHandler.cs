@@ -28,6 +28,9 @@ namespace deskgeek.Application.Handlers
             string savedFileName = null;
             try
             {
+                request.imagemUrl = NormalizeOptionalString(request.imagemUrl);
+                request.UrlMidia = NormalizeOptionalString(request.UrlMidia);
+
                 var objMedia = _mapper.Map<MediaDex>(request);
                 if (string.IsNullOrWhiteSpace(objMedia.TipoMidia))
                 {
@@ -56,6 +59,11 @@ namespace deskgeek.Application.Handlers
             }
             
             
+        }
+
+        private static string? NormalizeOptionalString(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
     }
 }

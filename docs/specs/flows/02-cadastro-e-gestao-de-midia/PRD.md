@@ -13,6 +13,8 @@ Permitir criar, listar, editar e remover obras da biblioteca pessoal.
 - `MID-PRD-003`: status suportados: Em andamento, Finalizado, Inativo.
 - `MID-PRD-004`: edicao permite alterar metadados e imagem (upload ou URL).
 - `MID-PRD-005`: remocao exige confirmacao explicita.
+- `MID-PRD-006`: cada mídia pode ter `urlMidia` opcional (URL pessoal para assistir/ler).
+- `MID-PRD-007`: `urlMidia` nao deve ser exposta nos endpoints de calendario/consulta por outro usuario.
 
 ## Fluxo principal
 1. Usuario busca obra por tipo e termo.
@@ -26,3 +28,5 @@ Permitir criar, listar, editar e remover obras da biblioteca pessoal.
 - `AC-MID-002`: edicao persiste e reflete na listagem.
 - `AC-MID-003`: remocao exclui item da lista.
 - `AC-MID-004`: upload de imagem funciona na criacao e edicao.
+- `AC-MID-005`: cadastro e edicao persistem `urlMidia` quando informada.
+- `AC-MID-006`: ausencia de `urlMidia` nao bloqueia cadastro/edicao.
