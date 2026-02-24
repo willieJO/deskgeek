@@ -16,6 +16,7 @@ namespace deskgeek.Application.Commands
         public IFormFile? ImagemUpload { get; set; }
         public string? ImagemDirectory { get; set; }
         public string? imagemUrl { get; set; }
+        public string? UrlMidia { get; set; }
 
     }
 }

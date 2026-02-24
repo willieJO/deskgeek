@@ -16,6 +16,8 @@ Centralizar o cadastro de obras (anime, mangá, manhua, série e filme), permiti
 - `BRD-AM-005`: para demais tipos, usuário pode informar capítulo/episódio atual e dia da semana.
 - `BRD-AM-006`: status suportados: `Em andamento`, `Finalizado`, `Inativo`.
 - `BRD-AM-007`: backend exige apenas `Nome` como obrigatório no cadastro.
+- `BRD-AM-008`: usuario pode informar `urlMidia` opcional (link pessoal para assistir/ler).
+- `BRD-AM-009`: `urlMidia` e dado pessoal e nao deve ser exposta por endpoints de calendario compartilhado.
 
 ## 4. Valor de negócio
 - Reduz trabalho manual na criação de registros via auto-sugestão.

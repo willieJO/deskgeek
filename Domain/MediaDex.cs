@@ -18,5 +18,6 @@ namespace deskgeek.Domain
         public IFormFile ImagemUpload { get; set; }
         public string? ImagemDirectory { get; set; }
         public string? imagemUrl { get; set; }
+        public string? UrlMidia { get; set; }
     }
 }

@@ -25,6 +25,9 @@ namespace deskgeek.Application.Handlers.Media
         public async Task<Guid?> Handle(EditMediaCommand request, CancellationToken cancellationToken)
         {
             try {
+                request.imagemUrl = NormalizeOptionalString(request.imagemUrl);
+                request.UrlMidia = NormalizeOptionalString(request.UrlMidia);
+
                 var objMedia = _mapper.Map<MediaDex>(request);
                 if (request.ImagemUpload != null && request.ImagemUpload.Length > 0)
                 {
@@ -44,6 +47,11 @@ namespace deskgeek.Application.Handlers.Media
             {
                 throw e;
             }
+        }
+
+        private static string? NormalizeOptionalString(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
 
     }
