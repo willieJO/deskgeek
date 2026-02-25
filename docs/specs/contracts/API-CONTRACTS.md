@@ -29,7 +29,38 @@ Sucesso: `200` com `{ "success": true, "message": "..." }` e cookie `AuthToken`.
 Falha: `400` com `{ "success": false, "message": "..." }`.
 
 ### GET `/api/Usuario/me` (Authorize)
-Sucesso: `200` com `{ success, id, email }`.
+Sucesso: `200` com `{ success, id, email, usuario, fotoPerfilDisponivel }`.
+
+### PUT `/api/Usuario/me/nome` (Authorize)
+Body:
+```json
+{
+  "usuario": "string"
+}
+```
+Sucesso: `200` com `{ "success": true, "id": "guid", "usuario": "string" }`.
+Falha: `400` com `{ "success": false, "message": "..." }`.
+
+### PUT `/api/Usuario/me/senha` (Authorize)
+Body:
+```json
+{
+  "senhaAtual": "string",
+  "novaSenha": "string"
+}
+```
+Sucesso: `200` com `{ "success": true, "message": "Senha atualizada com sucesso." }`.
+Falha (senha atual invalida/validacao): `400` com `{ "success": false, "message": "..." }`.
+
+### PUT `/api/Usuario/me/foto` (Authorize, multipart/form-data)
+Campos aceitos:
+- `foto` (arquivo)
+Sucesso: `200` com `{ "success": true, "message": "Foto de perfil atualizada com sucesso." }`.
+Falha: `400` com `{ "success": false, "message": "..." }`.
+
+### GET `/api/Usuario/me/foto` (Authorize)
+Retorna binário da foto de perfil do usuário autenticado.
+Se não houver foto cadastrada, retorna `404`.
 
 ### POST `/api/Usuario/logout`
 Sucesso: `200` com `{ success: true }`.

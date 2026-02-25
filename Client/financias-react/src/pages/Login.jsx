@@ -28,7 +28,7 @@ export default function Login({ onLogin }) {
 
       if (response.data?.success) {
         setMessage("Login realizado com sucesso.");
-        onLogin?.();
+        await onLogin?.();
         navigate("/dashboard");
       } else {
         setMessage(response.data?.message || "Email ou senha inválidos.");

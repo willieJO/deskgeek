@@ -14,6 +14,10 @@ namespace deskgeek.Repository
         Task<List<UsuarioResumo>> BuscarPorUsuarioAsync(string termo, int limite);
         Task<bool> EmailExisteAsync(string email);
         Task<bool> UsuarioExisteAsync(string usuario);
+        Task<bool> UsuarioExisteAsync(string usuario, Guid ignoreId);
         Task<string> GetUserId(LoginQuery usuario);
+        Task AtualizarNomeAsync(Guid id, string usuario);
+        Task AtualizarSenhaAsync(Guid id, string senhaHash);
+        Task AtualizarFotoPerfilAsync(Guid id, string? fotoPerfilArquivo);
     }
 }

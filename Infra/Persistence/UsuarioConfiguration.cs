@@ -22,6 +22,8 @@ namespace deskgeek.Infra.Persistence
             builder.Property(x => x.Senha)
                 .IsRequired()
                 .HasMaxLength(200);
+            builder.Property(x => x.FotoPerfilArquivo)
+                .HasMaxLength(255);
 
         }
     }

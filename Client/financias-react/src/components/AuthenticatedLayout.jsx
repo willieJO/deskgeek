@@ -6,6 +6,7 @@ import {
   HiOutlineBookOpen,
   HiOutlineCalendarDays,
   HiOutlineChevronDoubleLeft,
+  HiOutlineCog6Tooth,
   HiOutlineHomeModern,
 } from "react-icons/hi2";
 import ButtonSpinner from "./ButtonSpinner";
@@ -27,9 +28,47 @@ const menuItems = [
     icon: <HiOutlineCalendarDays size={20} />,
     path: "/calendariodex",
   },
+  {
+    label: "Configurações",
+    icon: <HiOutlineCog6Tooth size={20} />,
+    path: "/configuracoes",
+  },
 ];
 
-export default function AuthenticatedLayout({ onLogout }) {
+function UserAvatar({ currentUser, compact = false }) {
+  const initials = (currentUser?.usuario || currentUser?.email || "U")
+    .trim()
+    .slice(0, 1)
+    .toUpperCase();
+
+  const fotoUrl =
+    currentUser?.fotoPerfilDisponivel && currentUser?.fotoCacheKey
+      ? `${api.getUri({ url: "/usuario/me/foto" })}?v=${currentUser.fotoCacheKey}`
+      : null;
+
+  const sizeClass = compact ? "h-10 w-10" : "h-12 w-12";
+
+  if (fotoUrl) {
+    return (
+      <img
+        src={fotoUrl}
+        alt="Foto de perfil"
+        className={`${sizeClass} rounded-full border border-cyan-300/35 object-cover`}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`${sizeClass} flex items-center justify-center rounded-full border border-cyan-300/35 bg-cyan-300/10 text-sm font-bold text-cyan-100`}
+      aria-label="Avatar padrão"
+    >
+      {initials}
+    </div>
+  );
+}
+
+export default function AuthenticatedLayout({ onLogout, currentUser }) {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -37,8 +76,7 @@ export default function AuthenticatedLayout({ onLogout }) {
   const navigate = useNavigate();
 
   const currentPage =
-    menuItems.find((item) => location.pathname.startsWith(item.path))?.label ||
-    "Painel";
+    menuItems.find((item) => location.pathname.startsWith(item.path))?.label || "Painel";
 
   async function handleLogout() {
     if (isLoggingOut) return;
@@ -71,7 +109,7 @@ export default function AuthenticatedLayout({ onLogout }) {
         } ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
       >
         <div
-          className={`mb-8 flex items-center ${
+          className={`mb-5 flex items-center ${
             sidebarExpanded ? "justify-between px-2" : "justify-center"
           }`}
         >
@@ -93,11 +131,27 @@ export default function AuthenticatedLayout({ onLogout }) {
           >
             <HiOutlineChevronDoubleLeft
               size={20}
-              className={`transition-transform ${
-                sidebarExpanded ? "" : "rotate-180"
-              }`}
+              className={`transition-transform ${sidebarExpanded ? "" : "rotate-180"}`}
             />
           </button>
+        </div>
+
+        <div
+          className={`mb-5 rounded-2xl border border-slate-500/30 bg-slate-900/35 p-3 ${
+            sidebarExpanded ? "" : "px-2"
+          }`}
+        >
+          <div className={`flex items-center ${sidebarExpanded ? "gap-3" : "justify-center"}`}>
+            <UserAvatar currentUser={currentUser} compact={!sidebarExpanded} />
+            {sidebarExpanded && (
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-slate-100">
+                  {currentUser?.usuario || "Usuário"}
+                </p>
+                <p className="truncate text-xs text-slate-400">{currentUser?.email || ""}</p>
+              </div>
+            )}
+          </div>
         </div>
 
         <nav className="flex-1 space-y-1">
@@ -134,11 +188,7 @@ export default function AuthenticatedLayout({ onLogout }) {
         </button>
       </aside>
 
-      <main
-        className={`min-h-screen ${
-          sidebarExpanded ? "lg:ml-72" : "lg:ml-24"
-        }`}
-      >
+      <main className={`min-h-screen ${sidebarExpanded ? "lg:ml-72" : "lg:ml-24"}`}>
         <header className="sticky top-0 z-20 border-b border-slate-700/35 bg-[rgba(8,14,27,0.96)] px-4 py-3 sm:px-6">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -150,17 +200,16 @@ export default function AuthenticatedLayout({ onLogout }) {
                 <HiBars3 size={20} />
               </button>
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                  Navegação
-                </p>
-                <p className="text-sm font-semibold text-slate-100 sm:text-base">
-                  {currentPage}
-                </p>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Navegação</p>
+                <p className="text-sm font-semibold text-slate-100 sm:text-base">{currentPage}</p>
               </div>
             </div>
 
-            <div className="hidden rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100 sm:block">
-              Organize, acompanhe e finalize.
+            <div className="hidden items-center gap-2 sm:flex">
+              <div className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100">
+                Organize, acompanhe e finalize.
+              </div>
+              <UserAvatar currentUser={currentUser} compact />
             </div>
           </div>
         </header>
