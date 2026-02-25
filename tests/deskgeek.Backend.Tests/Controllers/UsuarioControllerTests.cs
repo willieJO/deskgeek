@@ -100,7 +100,8 @@ public class UsuarioControllerTests
         var result = await controller.Me();
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var payload = Assert.NotNull(ok.Value);
+        Assert.NotNull(ok.Value);
+        var payload = ok.Value!;
         Assert.Equal("willi", payload.GetType().GetProperty("usuario")?.GetValue(payload)?.ToString());
         Assert.Equal(true, payload.GetType().GetProperty("fotoPerfilDisponivel")?.GetValue(payload));
     }
