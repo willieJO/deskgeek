@@ -60,6 +60,20 @@ namespace deskgeek.Repository
                 .AsNoTracking()
                 .AnyAsync(x => x.Usuario.ToUpper() == usuarioUpper);
         }
+        public async Task<bool> UsuarioExisteAsync(string usuario, Guid ignoreId)
+        {
+            var usuarioNormalizado = (usuario ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(usuarioNormalizado))
+            {
+                return false;
+            }
+
+            var usuarioUpper = usuarioNormalizado.ToUpper();
+
+            return await _context.Usuarios
+                .AsNoTracking()
+                .AnyAsync(x => x.Id != ignoreId && x.Usuario.ToUpper() == usuarioUpper);
+        }
 
         public async Task DeleteAsync(User usuario)
         {
@@ -142,6 +156,45 @@ namespace deskgeek.Repository
             existeUsuario.Usuario = usuairo.Usuario;
             existeUsuario.Email = usuairo.Email;
             existeUsuario.Senha = usuairo.Senha;
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task AtualizarNomeAsync(Guid id, string usuario)
+        {
+            var existeUsuario = await _context.Usuarios.FindAsync(id);
+            if (existeUsuario == null)
+            {
+                throw new KeyNotFoundException("Usuario não encontrado");
+            }
+
+            existeUsuario.Usuario = usuario;
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task AtualizarSenhaAsync(Guid id, string senhaHash)
+        {
+            var existeUsuario = await _context.Usuarios.FindAsync(id);
+            if (existeUsuario == null)
+            {
+                throw new KeyNotFoundException("Usuario não encontrado");
+            }
+
+            existeUsuario.Senha = senhaHash;
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task AtualizarFotoPerfilAsync(Guid id, string? fotoPerfilArquivo)
+        {
+            var existeUsuario = await _context.Usuarios.FindAsync(id);
+            if (existeUsuario == null)
+            {
+                throw new KeyNotFoundException("Usuario não encontrado");
+            }
+
+            existeUsuario.FotoPerfilArquivo = string.IsNullOrWhiteSpace(fotoPerfilArquivo)
+                ? null
+                : fotoPerfilArquivo.Trim();
+
             await _context.SaveChangesAsync();
         }
     }

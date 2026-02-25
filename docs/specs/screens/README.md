@@ -8,6 +8,7 @@ Este diretório documenta o comportamento **como está implementado hoje** nas t
 - `acompanhar-midia` (`/dashboard`, componente `AnimeTracker`)
 - `minhas-obras` (`/tabeladex`)
 - `calendario` (`/calendariodex`)
+- `configuracoes` (`/configuracoes`)
 
 ## Estrutura por tela
 Cada pasta contém:

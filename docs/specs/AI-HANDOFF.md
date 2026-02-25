@@ -13,6 +13,8 @@ Este e o ponto de entrada recomendado para um agente de IA analisar e desenvolve
 - `docs/specs/flows/02-cadastro-e-gestao-de-midia/TDD.md`
 - `docs/specs/flows/03-calendario-semanal/PRD.md`
 - `docs/specs/flows/03-calendario-semanal/TDD.md`
+- `docs/specs/flows/04-perfil-e-configuracoes/PRD.md`
+- `docs/specs/flows/04-perfil-e-configuracoes/TDD.md`
 
 ## Como usar com agente de IA
 - Passo 1: informe qual fluxo sera alterado.
@@ -31,3 +33,4 @@ Este e o ponto de entrada recomendado para um agente de IA analisar e desenvolve
 - `/dashboard` (AnimeTracker)
 - `/tabeladex`
 - `/calendariodex`
+- `/configuracoes`

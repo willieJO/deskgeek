@@ -10,6 +10,7 @@ import api from "./utils/api";
 
 const AnimeTracker = lazy(() => import("./pages/AnimeTracker"));
 const CalendarioDex = lazy(() => import("./pages/CalendarioDex"));
+const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
 const TabelaDex = lazy(() =>
@@ -38,24 +39,50 @@ function LazyRoute({ children }) {
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  async function refreshCurrentUser() {
+    try {
+      const res = await api.get("/usuario/me", { withCredentials: true });
+      if (res.data?.success) {
+        const nextUser = {
+          id: res.data.id,
+          email: res.data.email,
+          usuario: res.data.usuario || "",
+          fotoPerfilDisponivel: Boolean(res.data.fotoPerfilDisponivel),
+          fotoCacheKey: Date.now(),
+        };
+
+        setCurrentUser(nextUser);
+        setIsLoggedIn(true);
+        return nextUser;
+      }
+
+      setCurrentUser(null);
+      setIsLoggedIn(false);
+      return null;
+    } catch {
+      setCurrentUser(null);
+      setIsLoggedIn(false);
+      return null;
+    }
+  }
 
   useEffect(() => {
+    let mounted = true;
+
     async function checkAuth() {
-      try {
-        const res = await api.get("/usuario/me", { withCredentials: true });
-        if (res.data?.success) {
-          setIsLoggedIn(true);
-          setLoading(false);
-        } else {
-          setIsLoggedIn(false);
-        }
-      } catch {
-        setIsLoggedIn(false);
-      } finally {
+      await refreshCurrentUser();
+      if (mounted) {
         setLoading(false);
       }
     }
+
     checkAuth();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   if (loading) {
@@ -103,7 +130,7 @@ function App() {
               <Navigate to="/dashboard" />
             ) : (
               <LazyRoute>
-                <Login onLogin={() => setIsLoggedIn(true)} />
+                <Login onLogin={refreshCurrentUser} />
               </LazyRoute>
             )
           }
@@ -126,7 +153,13 @@ function App() {
           path="/"
           element={
             isLoggedIn ? (
-              <AuthenticatedLayout onLogout={() => setIsLoggedIn(false)} />
+              <AuthenticatedLayout
+                currentUser={currentUser}
+                onLogout={() => {
+                  setIsLoggedIn(false);
+                  setCurrentUser(null);
+                }}
+              />
             ) : (
               <Navigate to="/login" />
             )
@@ -153,6 +186,14 @@ function App() {
             element={
               <LazyRoute>
                 <CalendarioDex />
+              </LazyRoute>
+            }
+          />
+          <Route
+            path="configuracoes"
+            element={
+              <LazyRoute>
+                <Configuracoes currentUser={currentUser} refreshCurrentUser={refreshCurrentUser} />
               </LazyRoute>
             }
           />

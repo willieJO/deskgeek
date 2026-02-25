@@ -6,6 +6,7 @@ Este modelo organiza requisitos por capacidade de negocio e nao apenas por tela.
 - `01-autenticacao`: login, cadastro, sessao e logout.
 - `02-cadastro-e-gestao-de-midia`: criar, listar, editar e remover obras.
 - `03-calendario-semanal`: agenda por dia da semana para obras em andamento.
+- `04-perfil-e-configuracoes`: configuracoes de perfil (nome, senha e foto).
 
 ## Padrao por fluxo
 - `PRD.md`: objetivo, regras, fluxos, criterios de aceite.
