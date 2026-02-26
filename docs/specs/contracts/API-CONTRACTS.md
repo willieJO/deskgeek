@@ -62,11 +62,16 @@ Falha: `400` com `{ "success": false, "message": "..." }`.
 Retorna binário da foto de perfil do usuário autenticado.
 Se não houver foto cadastrada, retorna `404`.
 
+### GET `/api/Usuario/foto/{id}` (Authorize)
+Retorna binário da foto de perfil do usuário informado por `id`.
+Se não houver foto cadastrada, retorna `404`.
+Se o usuário não existir, retorna `404` com payload de erro.
+
 ### POST `/api/Usuario/logout`
 Sucesso: `200` com `{ success: true }`.
 
 ### GET `/api/Usuario/buscar?termo=...&limite=...` (Authorize)
-Retorna lista otimizada de usuários filtrados por prefixo, com campos `id` e `usuario`.
+Retorna lista otimizada de usuários filtrados por prefixo, com campos `id`, `usuario` e `fotoPerfilDisponivel`.
 
 ## MediaDex
 ### GET `/api/MediaDex/obterMediaPorUsuario` (Authorize)

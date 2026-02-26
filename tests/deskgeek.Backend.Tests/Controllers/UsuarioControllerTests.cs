@@ -152,6 +152,87 @@ public class UsuarioControllerTests
         Assert.IsType<NotFoundResult>(result);
     }
 
+    [Fact]
+    public async Task BuscarUsuarios_ShouldReturnEmptyList_WhenTermHasLessThan2Chars()
+    {
+        var mediatorMock = new Mock<IMediator>();
+        var controller = BuildController(mediatorMock.Object, "Development");
+
+        var result = await controller.BuscarUsuarios("a", 8);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var payload = Assert.IsType<List<UsuarioResumo>>(ok.Value);
+        Assert.Empty(payload);
+        mediatorMock.Verify(
+            m => m.Send(It.IsAny<BuscarUsuarioQuery>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task BuscarUsuarios_ShouldReturnResumoWithFotoPerfilDisponivel()
+    {
+        var mediatorMock = new Mock<IMediator>();
+        mediatorMock
+            .Setup(m => m.Send(It.IsAny<BuscarUsuarioQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UsuarioResumo>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Usuario = "fulano",
+                    FotoPerfilDisponivel = true
+                }
+            });
+
+        var controller = BuildController(mediatorMock.Object, "Development");
+
+        var result = await controller.BuscarUsuarios("fu", 8);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var payload = Assert.IsType<List<UsuarioResumo>>(ok.Value);
+        Assert.Single(payload);
+        Assert.True(payload[0].FotoPerfilDisponivel);
+    }
+
+    [Fact]
+    public async Task ObterFotoUsuario_ShouldReturnNotFound_WhenUserDoesNotExist()
+    {
+        var mediatorMock = new Mock<IMediator>();
+        mediatorMock
+            .Setup(m => m.Send(It.IsAny<UsuarioByIdQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((User?)null);
+
+        var controller = BuildController(mediatorMock.Object, "Development");
+
+        var result = await controller.ObterFotoUsuario(Guid.NewGuid());
+
+        var notFound = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.Equal(404, notFound.StatusCode);
+    }
+
+    [Fact]
+    public async Task ObterFotoUsuario_ShouldReturnNotFound_WhenUserHasNoPhoto()
+    {
+        var userId = Guid.NewGuid();
+        var mediatorMock = new Mock<IMediator>();
+        mediatorMock
+            .Setup(m => m.Send(It.IsAny<UsuarioByIdQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new User
+            {
+                Id = userId,
+                Email = "user@test.com",
+                Usuario = "willi",
+                Senha = "hash",
+                FotoPerfilArquivo = null
+            });
+
+        var controller = BuildController(mediatorMock.Object, "Development");
+
+        var result = await controller.ObterFotoUsuario(userId);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
     private static UsuarioController BuildController(IMediator mediator, string environmentName)
     {
         var controller = new UsuarioController(

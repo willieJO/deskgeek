@@ -6,11 +6,12 @@ Calendário mensal com eventos recorrentes por dia da semana para obras ativas.
 ## 2. Fluxo principal
 1. Tela monta.
 2. Front chama `GET /api/MediaDex/obterMediaPorUsuarioPorStatusEmAndamento` para o usuario logado.
-3. Ao digitar no campo de busca, front consulta `GET /api/Usuario/buscar?termo=...`.
+3. Ao digitar no campo de busca, front consulta `GET /api/Usuario/buscar?termo=...` e recebe `id`, `usuario`, `fotoPerfilDisponivel`.
 4. Opcionalmente, ao informar `usuario`, front chama `GET /api/MediaDex/obterMediaPorUsuarioPorStatusEmAndamentoPorUsuario?usuario=...`.
 5. Front aplica filtro defensivo (`status === "Em andamento"` e `diaNovoCapitulo != null`).
 6. Converte obras em eventos do FullCalendar.
 7. Renderiza cards de evento com imagem e título.
+8. Quando estiver em `usuario` de terceiro, exibe banner fixo de contexto com avatar e CTA para voltar ao proprio calendario.
 
 ## 2.1 Privacidade de dados
 - O calendário nao exibe nem consome `urlMidia` (link pessoal para assistir/ler), mesmo quando o campo existe na mídia.
@@ -34,6 +35,10 @@ Calendário mensal com eventos recorrentes por dia da semana para obras ativas.
 - `AC-CAL-005`: ao informar `usuario` válido, a tela exibe o calendário do usuário selecionado.
 - `AC-CAL-006`: ao digitar no campo de usuário, a tela exibe sugestões filtradas de usuários cadastrados.
 - `AC-CAL-007`: respostas de calendário não expõem `urlMidia`.
+- `AC-CAL-008`: sugestões de usuário exibem avatar (foto real quando disponível; fallback por inicial quando indisponível).
+- `AC-CAL-009`: quando `?usuario` aponta para terceiro, a tela exibe banner explícito `Visualizando calendário de @usuario`.
+- `AC-CAL-010`: usuário logado não aparece nas sugestões do autocomplete.
+- `AC-CAL-011`: se `?usuario` for o próprio usuário logado (case-insensitive), a tela volta automaticamente para o calendário próprio.
 
 ## 6. Referências front/back
 - Front: `Client/financias-react/src/pages/CalendarioDex.jsx`, `Client/financias-react/src/pages/calendario.css`

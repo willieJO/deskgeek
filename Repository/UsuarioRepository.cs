@@ -116,7 +116,8 @@ namespace deskgeek.Repository
                 .Select(x => new UsuarioResumo
                 {
                     Id = x.Id,
-                    Usuario = x.Usuario
+                    Usuario = x.Usuario,
+                    FotoPerfilDisponivel = !string.IsNullOrWhiteSpace(x.FotoPerfilArquivo)
                 })
                 .Take(limiteSeguro)
                 .ToListAsync();

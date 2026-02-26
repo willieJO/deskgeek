@@ -185,7 +185,7 @@ function App() {
             path="calendariodex"
             element={
               <LazyRoute>
-                <CalendarioDex />
+                <CalendarioDex currentUser={currentUser} />
               </LazyRoute>
             }
           />

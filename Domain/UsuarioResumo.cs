@@ -4,5 +4,6 @@ namespace deskgeek.Domain
     {
         public Guid Id { get; set; }
         public string Usuario { get; set; } = string.Empty;
+        public bool FotoPerfilDisponivel { get; set; }
     }
 }

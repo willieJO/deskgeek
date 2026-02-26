@@ -14,7 +14,10 @@ Oferecer visão temporal dos lançamentos recorrentes das obras em andamento par
 - `BRD-CAL-004`: imagem do evento prioriza `imagemDirectory`, depois `imagemUrl`, depois placeholder.
 - `BRD-CAL-005`: tela exibe KPIs rápidos: total ativo e dia com maior concentração.
 - `BRD-CAL-006`: usuario autenticado pode visualizar o calendario de outro usuario informando `usuario`.
-- `BRD-CAL-007`: busca de usuário exibe sugestões filtradas dos usuários cadastrados.
+- `BRD-CAL-007`: busca de usuário exibe sugestões filtradas dos usuários cadastrados com avatar.
+- `BRD-CAL-008`: quando visualizando calendário de terceiro, a tela deve mostrar indicador visual explícito de contexto.
+- `BRD-CAL-009`: o próprio usuário autenticado não deve aparecer nas sugestões de busca.
+- `BRD-CAL-010`: se o filtro por `usuario` for o próprio usuário, a visualização deve cair no calendário próprio.
 
 ## 4. Valor de negócio
 - Visibilidade semanal do que deve ser acompanhado.
