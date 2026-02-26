@@ -201,6 +201,24 @@ namespace deskgeek.Presentation
                 return NotFound(new { success = false, message = "Usuário não encontrado." });
             }
 
+            return BuildPhotoResponse(usuario);
+        }
+
+        [Authorize]
+        [HttpGet("foto/{id:guid}")]
+        public async Task<IActionResult> ObterFotoUsuario(Guid id)
+        {
+            var usuario = await _mediator.Send(new UsuarioByIdQuery { Id = id });
+            if (usuario == null)
+            {
+                return NotFound(new { success = false, message = "Usuário não encontrado." });
+            }
+
+            return BuildPhotoResponse(usuario);
+        }
+
+        private IActionResult BuildPhotoResponse(User usuario)
+        {
             if (string.IsNullOrWhiteSpace(usuario.FotoPerfilArquivo))
             {
                 return NotFound();
@@ -215,7 +233,7 @@ namespace deskgeek.Presentation
             byte[] bytes = System.IO.File.ReadAllBytes(caminhoLocal);
             try { System.IO.File.Delete(caminhoLocal); } catch { }
 
-            return File(bytes, GetImageContentType(usuario.FotoPerfilArquivo));
+            return File(bytes, GetImageContentType(usuario.FotoPerfilArquivo!));
         }
 
         [HttpPost("login")]

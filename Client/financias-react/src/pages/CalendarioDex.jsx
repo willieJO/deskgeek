@@ -41,6 +41,56 @@ const hoverPreviewPadding = 12;
 const hoverPreviewOffset = 18;
 const minimoBuscaUsuario = 2;
 
+function normalizarUsuario(valor) {
+  return (valor ?? "").trim().toLowerCase();
+}
+
+function normalizarUsuarioResumo(item) {
+  return {
+    id: item?.id ?? "",
+    usuario: (item?.usuario ?? "").trim(),
+    fotoPerfilDisponivel: Boolean(item?.fotoPerfilDisponivel),
+  };
+}
+
+function UsuarioAvatar({
+  userId,
+  usuario,
+  fotoPerfilDisponivel,
+  sizeClass = "h-8 w-8",
+  textClass = "text-xs",
+}) {
+  const [erroImagem, setErroImagem] = useState(false);
+
+  useEffect(() => {
+    setErroImagem(false);
+  }, [userId, fotoPerfilDisponivel]);
+
+  const inicial = (usuario || "U").trim().slice(0, 1).toUpperCase();
+  const fotoUrl =
+    userId && fotoPerfilDisponivel ? api.getUri({ url: `/usuario/foto/${userId}` }) : null;
+
+  if (fotoUrl && !erroImagem) {
+    return (
+      <img
+        src={fotoUrl}
+        alt={`Foto de perfil de ${usuario || "usuário"}`}
+        className={`${sizeClass} rounded-full border border-cyan-300/35 object-cover`}
+        onError={() => setErroImagem(true)}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`${sizeClass} flex items-center justify-center rounded-full border border-cyan-300/35 bg-cyan-300/10 font-bold text-cyan-100 ${textClass}`}
+      aria-label={`Avatar de ${usuario || "usuário"}`}
+    >
+      {inicial || "U"}
+    </div>
+  );
+}
+
 function getHoverPreviewPosition(clientX, clientY) {
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
@@ -65,9 +115,16 @@ function getHoverPreviewPosition(clientX, clientY) {
   return { left, top };
 }
 
-export default function CalendarioDex() {
+export default function CalendarioDex({ currentUser }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const usuarioSelecionado = (searchParams.get("usuario") ?? "").trim();
+  const usuarioLogado = (currentUser?.usuario ?? "").trim();
+  const usuarioSelecionadoNormalizado = normalizarUsuario(usuarioSelecionado);
+  const usuarioLogadoNormalizado = normalizarUsuario(usuarioLogado);
+  const visualizandoTerceiro =
+    Boolean(usuarioSelecionado) && usuarioSelecionadoNormalizado !== usuarioLogadoNormalizado;
+  const usuarioConsulta = visualizandoTerceiro ? usuarioSelecionado : "";
+
   const [eventos, setEventos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hoverPreview, setHoverPreview] = useState(null);
@@ -76,6 +133,7 @@ export default function CalendarioDex() {
   const [usuariosFiltrados, setUsuariosFiltrados] = useState([]);
   const [buscandoUsuarios, setBuscandoUsuarios] = useState(false);
   const [acaoCarregamento, setAcaoCarregamento] = useState("");
+  const [usuarioSelecionadoMeta, setUsuarioSelecionadoMeta] = useState(null);
   const cacheBuscaUsuarios = useRef(new Map());
   const hoverPreviewCardRef = useRef(null);
   const hoverPreviewRafRef = useRef(null);
@@ -106,16 +164,40 @@ export default function CalendarioDex() {
   };
 
   useEffect(() => {
+    cacheBuscaUsuarios.current.clear();
+  }, [currentUser?.id, usuarioLogadoNormalizado]);
+
+  useEffect(() => {
     setFiltroUsuario(usuarioSelecionado);
   }, [usuarioSelecionado]);
+
+  useEffect(() => {
+    if (!usuarioSelecionado || !usuarioLogadoNormalizado) {
+      return;
+    }
+    if (usuarioSelecionadoNormalizado !== usuarioLogadoNormalizado) {
+      return;
+    }
+
+    setMensagemFiltro("");
+    setUsuariosFiltrados([]);
+    setUsuarioSelecionadoMeta(null);
+    setAcaoCarregamento("");
+    setSearchParams({}, { replace: true });
+  }, [
+    usuarioSelecionado,
+    usuarioSelecionadoNormalizado,
+    usuarioLogadoNormalizado,
+    setSearchParams,
+  ]);
 
   useEffect(() => {
     async function fetchEventos() {
       setLoading(true);
       try {
-        const response = usuarioSelecionado
+        const response = usuarioConsulta
           ? await api.get("/MediaDex/obterMediaPorUsuarioPorStatusEmAndamentoPorUsuario", {
-              params: { usuario: usuarioSelecionado },
+              params: { usuario: usuarioConsulta },
               withCredentials: true,
             })
           : await api.get("/MediaDex/obterMediaPorUsuarioPorStatusEmAndamento", {
@@ -166,7 +248,57 @@ export default function CalendarioDex() {
     }
 
     fetchEventos();
-  }, [usuarioSelecionado]);
+  }, [usuarioConsulta]);
+
+  useEffect(() => {
+    if (!usuarioConsulta) {
+      setUsuarioSelecionadoMeta(null);
+      return;
+    }
+
+    let ativo = true;
+    async function resolverUsuarioSelecionado() {
+      try {
+        const response = await api.get("/usuario/buscar", {
+          params: { termo: usuarioConsulta, limite: 8 },
+          withCredentials: true,
+        });
+
+        if (!ativo) return;
+
+        const resultados = Array.isArray(response.data)
+          ? response.data.map(normalizarUsuarioResumo)
+          : [];
+        const usuarioEncontrado = resultados.find(
+          (item) => normalizarUsuario(item.usuario) === normalizarUsuario(usuarioConsulta)
+        );
+
+        if (usuarioEncontrado) {
+          setUsuarioSelecionadoMeta(usuarioEncontrado);
+          return;
+        }
+
+        setUsuarioSelecionadoMeta({
+          id: "",
+          usuario: usuarioConsulta,
+          fotoPerfilDisponivel: false,
+        });
+      } catch {
+        if (!ativo) return;
+        setUsuarioSelecionadoMeta({
+          id: "",
+          usuario: usuarioConsulta,
+          fotoPerfilDisponivel: false,
+        });
+      }
+    }
+
+    resolverUsuarioSelecionado();
+
+    return () => {
+      ativo = false;
+    };
+  }, [usuarioConsulta]);
 
   useEffect(() => {
     const termo = filtroUsuario.trim();
@@ -175,8 +307,10 @@ export default function CalendarioDex() {
       setUsuariosFiltrados([]);
       return;
     }
-    if (cacheBuscaUsuarios.current.has(termo)) {
-      setUsuariosFiltrados(cacheBuscaUsuarios.current.get(termo));
+
+    const cacheKey = `${termo}|${currentUser?.id ?? ""}`;
+    if (cacheBuscaUsuarios.current.has(cacheKey)) {
+      setUsuariosFiltrados(cacheBuscaUsuarios.current.get(cacheKey));
       setBuscandoUsuarios(false);
       return;
     }
@@ -191,9 +325,16 @@ export default function CalendarioDex() {
         });
 
         if (ativo) {
-          const resultados = Array.isArray(response.data) ? response.data : [];
-          cacheBuscaUsuarios.current.set(termo, resultados);
-          setUsuariosFiltrados(resultados);
+          const resultados = Array.isArray(response.data)
+            ? response.data.map(normalizarUsuarioResumo)
+            : [];
+
+          const resultadosSemUsuarioLogado = resultados.filter(
+            (item) => normalizarUsuario(item.usuario) !== usuarioLogadoNormalizado
+          );
+
+          cacheBuscaUsuarios.current.set(cacheKey, resultadosSemUsuarioLogado);
+          setUsuariosFiltrados(resultadosSemUsuarioLogado);
         }
       } catch {
         if (ativo) {
@@ -210,7 +351,7 @@ export default function CalendarioDex() {
       ativo = false;
       clearTimeout(timer);
     };
-  }, [filtroUsuario]);
+  }, [filtroUsuario, currentUser?.id, usuarioLogadoNormalizado]);
 
   useEffect(() => {
     const clearHoverPreview = () => {
@@ -281,24 +422,32 @@ export default function CalendarioDex() {
       return;
     }
 
+    if (normalizarUsuario(usuarioNormalizado) === usuarioLogadoNormalizado) {
+      handleVerMeuCalendario();
+      return;
+    }
+
     setMensagemFiltro("");
     setUsuariosFiltrados([]);
+    setUsuarioSelecionadoMeta(null);
     setAcaoCarregamento("usuario");
     setSearchParams({ usuario: usuarioNormalizado });
   };
 
-  const handleSelecionarUsuario = (usuario) => {
-    setFiltroUsuario(usuario);
+  const handleSelecionarUsuario = (usuarioResumo) => {
+    setFiltroUsuario(usuarioResumo.usuario);
     setMensagemFiltro("");
     setUsuariosFiltrados([]);
+    setUsuarioSelecionadoMeta(usuarioResumo);
     setAcaoCarregamento("usuario");
-    setSearchParams({ usuario });
+    setSearchParams({ usuario: usuarioResumo.usuario });
   };
 
   const handleVerMeuCalendario = () => {
     setMensagemFiltro("");
     setFiltroUsuario("");
     setUsuariosFiltrados([]);
+    setUsuarioSelecionadoMeta(null);
     setAcaoCarregamento("meu");
     setSearchParams({});
   };
@@ -318,6 +467,12 @@ export default function CalendarioDex() {
       <span className="cal-event-title">{eventInfo.event.title}</span>
     </div>
   );
+
+  const usuarioBanner = usuarioSelecionadoMeta || {
+    id: "",
+    usuario: usuarioConsulta,
+    fotoPerfilDisponivel: false,
+  };
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5">
@@ -339,11 +494,7 @@ export default function CalendarioDex() {
               placeholder="Digite o usuário"
               className="w-full rounded-xl border border-slate-600 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-300 focus:outline-none"
             />
-            <button
-              type="submit"
-              className="ui-button w-full sm:w-auto"
-              disabled={loading}
-            >
+            <button type="submit" className="ui-button w-full sm:w-auto" disabled={loading}>
               {loading && acaoCarregamento === "usuario" ? (
                 <>
                   <ButtonSpinner />
@@ -383,10 +534,15 @@ export default function CalendarioDex() {
                 <li key={item.id}>
                   <button
                     type="button"
-                    onClick={() => handleSelecionarUsuario(item.usuario)}
-                    className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-100 transition hover:bg-cyan-300/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/55"
+                    onClick={() => handleSelecionarUsuario(item)}
+                    className="cal-user-search-item"
                   >
-                    {item.usuario}
+                    <UsuarioAvatar
+                      userId={item.id}
+                      usuario={item.usuario}
+                      fotoPerfilDisponivel={item.fotoPerfilDisponivel}
+                    />
+                    <span className="cal-user-search-name">@{item.usuario}</span>
                   </button>
                 </li>
               ))}
@@ -394,14 +550,34 @@ export default function CalendarioDex() {
           )}
 
           {mensagemFiltro && <p className="text-sm text-amber-300">{mensagemFiltro}</p>}
-          {usuarioSelecionado && (
-            <p className="text-sm text-cyan-100">
-              Visualizando calendário do usuário:{" "}
-              <span className="font-semibold">{usuarioSelecionado}</span>
-            </p>
-          )}
         </form>
       </section>
+
+      {visualizandoTerceiro && (
+        <section className="cal-context-banner">
+          <div className="cal-context-banner-content">
+            <UsuarioAvatar
+              userId={usuarioBanner.id}
+              usuario={usuarioBanner.usuario}
+              fotoPerfilDisponivel={usuarioBanner.fotoPerfilDisponivel}
+              sizeClass="h-12 w-12"
+              textClass="text-base"
+            />
+            <div className="min-w-0">
+              <p className="cal-context-banner-tag">Modo visualização</p>
+              <p className="cal-context-banner-title">
+                Visualizando calendário de <span>@{usuarioBanner.usuario}</span>
+              </p>
+              <p className="cal-context-banner-subtitle">
+                Eventos e métricas abaixo refletem os dados desse usuário.
+              </p>
+            </div>
+          </div>
+          <button type="button" onClick={handleVerMeuCalendario} className="ui-button-secondary">
+            Voltar para meu calendário
+          </button>
+        </section>
+      )}
 
       <section className="grid gap-4 sm:grid-cols-3">
         <article className="page-surface p-4">
