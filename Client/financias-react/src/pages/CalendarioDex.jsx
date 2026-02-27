@@ -6,6 +6,8 @@ import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import { useSearchParams } from "react-router-dom";
 import api from "../utils/api";
 import ButtonSpinner from "../components/ButtonSpinner";
+import HoverMediaPreview from "../components/HoverMediaPreview";
+import { useHoverMediaPreview } from "../components/useHoverMediaPreview";
 import "./calendario.css";
 
 const baseURL =
@@ -35,10 +37,6 @@ const diasPorIndice = [
   "Sábado",
 ];
 
-const hoverPreviewWidth = 330;
-const hoverPreviewHeight = 210;
-const hoverPreviewPadding = 12;
-const hoverPreviewOffset = 18;
 const minimoBuscaUsuario = 2;
 
 function normalizarUsuario(valor) {
@@ -91,30 +89,6 @@ function UsuarioAvatar({
   );
 }
 
-function getHoverPreviewPosition(clientX, clientY) {
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-
-  let left = clientX + hoverPreviewOffset;
-  let top = clientY - 24;
-
-  if (left + hoverPreviewWidth > viewportWidth - hoverPreviewPadding) {
-    left = clientX - hoverPreviewWidth - hoverPreviewOffset;
-  }
-  if (left < hoverPreviewPadding) {
-    left = hoverPreviewPadding;
-  }
-
-  if (top + hoverPreviewHeight > viewportHeight - hoverPreviewPadding) {
-    top = viewportHeight - hoverPreviewHeight - hoverPreviewPadding;
-  }
-  if (top < hoverPreviewPadding) {
-    top = hoverPreviewPadding;
-  }
-
-  return { left, top };
-}
-
 export default function CalendarioDex({ currentUser }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const usuarioSelecionado = (searchParams.get("usuario") ?? "").trim();
@@ -127,7 +101,6 @@ export default function CalendarioDex({ currentUser }) {
 
   const [eventos, setEventos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [hoverPreview, setHoverPreview] = useState(null);
   const [filtroUsuario, setFiltroUsuario] = useState(usuarioSelecionado);
   const [mensagemFiltro, setMensagemFiltro] = useState("");
   const [usuariosFiltrados, setUsuariosFiltrados] = useState([]);
@@ -135,33 +108,7 @@ export default function CalendarioDex({ currentUser }) {
   const [acaoCarregamento, setAcaoCarregamento] = useState("");
   const [usuarioSelecionadoMeta, setUsuarioSelecionadoMeta] = useState(null);
   const cacheBuscaUsuarios = useRef(new Map());
-  const hoverPreviewCardRef = useRef(null);
-  const hoverPreviewRafRef = useRef(null);
-  const hoverPreviewNextPosRef = useRef(null);
-
-  const cancelHoverPreviewFrame = () => {
-    if (hoverPreviewRafRef.current != null) {
-      window.cancelAnimationFrame(hoverPreviewRafRef.current);
-      hoverPreviewRafRef.current = null;
-    }
-  };
-
-  const queueHoverPreviewPosition = (clientX, clientY) => {
-    hoverPreviewNextPosRef.current = getHoverPreviewPosition(clientX, clientY);
-
-    if (hoverPreviewRafRef.current != null) return;
-
-    hoverPreviewRafRef.current = window.requestAnimationFrame(() => {
-      hoverPreviewRafRef.current = null;
-
-      const node = hoverPreviewCardRef.current;
-      const pos = hoverPreviewNextPosRef.current;
-      if (!node || !pos) return;
-
-      node.style.left = `${pos.left}px`;
-      node.style.top = `${pos.top}px`;
-    });
-  };
+  const { preview, cardRef, clearPreview, getTriggerProps } = useHoverMediaPreview();
 
   useEffect(() => {
     cacheBuscaUsuarios.current.clear();
@@ -354,22 +301,8 @@ export default function CalendarioDex({ currentUser }) {
   }, [filtroUsuario, currentUser?.id, usuarioLogadoNormalizado]);
 
   useEffect(() => {
-    const clearHoverPreview = () => {
-      cancelHoverPreviewFrame();
-      hoverPreviewNextPosRef.current = null;
-      setHoverPreview(null);
-    };
-
-    window.addEventListener("resize", clearHoverPreview);
-    window.addEventListener("scroll", clearHoverPreview, true);
-
-    return () => {
-      window.removeEventListener("resize", clearHoverPreview);
-      window.removeEventListener("scroll", clearHoverPreview, true);
-    };
-  }, []);
-
-  useEffect(() => () => cancelHoverPreviewFrame(), []);
+    clearPreview();
+  }, [usuarioConsulta, clearPreview]);
 
   const quantidadePorDia = useMemo(() => {
     const porDia = {};
@@ -386,32 +319,6 @@ export default function CalendarioDex({ currentUser }) {
     if (entradas.length === 0) return "Sem lançamentos";
     return entradas.sort((a, b) => b[1] - a[1])[0][0];
   }, [quantidadePorDia]);
-
-  const handleEventMouseEnter = (mouseEvent, eventInfo) => {
-    const { left, top } = getHoverPreviewPosition(mouseEvent.clientX, mouseEvent.clientY);
-    const dayIndex = eventInfo.event.extendedProps.dayIndex;
-    cancelHoverPreviewFrame();
-    hoverPreviewNextPosRef.current = { left, top };
-
-    setHoverPreview({
-      left,
-      top,
-      title: eventInfo.event.title,
-      imagem: eventInfo.event.extendedProps.imagem,
-      dia: diasPorIndice[dayIndex] || "Sem dia definido",
-    });
-  };
-
-  const handleEventMouseMove = (mouseEvent) => {
-    if (!hoverPreviewCardRef.current) return;
-    queueHoverPreviewPosition(mouseEvent.clientX, mouseEvent.clientY);
-  };
-
-  const handleEventMouseLeave = () => {
-    cancelHoverPreviewFrame();
-    hoverPreviewNextPosRef.current = null;
-    setHoverPreview(null);
-  };
 
   const handleFiltrarCalendario = (event) => {
     event.preventDefault();
@@ -455,9 +362,11 @@ export default function CalendarioDex({ currentUser }) {
   const eventContent = (eventInfo) => (
     <div
       className="cal-event-content"
-      onMouseEnter={(event) => handleEventMouseEnter(event, eventInfo)}
-      onMouseMove={handleEventMouseMove}
-      onMouseLeave={handleEventMouseLeave}
+      {...getTriggerProps({
+        title: eventInfo.event.title,
+        image: eventInfo.event.extendedProps.imagem,
+        meta: diasPorIndice[eventInfo.event.extendedProps.dayIndex] || "Sem dia definido",
+      })}
     >
       <img
         src={eventInfo.event.extendedProps.imagem}
@@ -619,25 +528,7 @@ export default function CalendarioDex({ currentUser }) {
         />
       </section>
 
-      {hoverPreview && (
-        <div className="cal-hover-preview-layer" aria-hidden="true">
-          <article
-            ref={hoverPreviewCardRef}
-            className="cal-hover-preview"
-            style={{ left: `${hoverPreview.left}px`, top: `${hoverPreview.top}px` }}
-          >
-            <img
-              src={hoverPreview.imagem}
-              alt={hoverPreview.title}
-              className="cal-hover-preview-image"
-            />
-            <div className="cal-hover-preview-info">
-              <p className="cal-hover-preview-day">{hoverPreview.dia}</p>
-              <h3 className="cal-hover-preview-title">{hoverPreview.title}</h3>
-            </div>
-          </article>
-        </div>
-      )}
+      <HoverMediaPreview preview={preview} cardRef={cardRef} />
     </div>
   );
 }

@@ -14,8 +14,11 @@ import {
   Chip,
 } from "@mui/material";
 import ButtonSpinner from "../components/ButtonSpinner";
+import HoverMediaPreview from "../components/HoverMediaPreview";
+import { useHoverMediaPreview } from "../components/useHoverMediaPreview";
 import api from "../utils/api";
 import { toast } from "react-toastify";
+import "./tabeladex.css";
 
 const baseURL =
   import.meta.env.MODE === "production"
@@ -98,6 +101,7 @@ export function TabelaDex() {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { preview, cardRef, clearPreview, getTriggerProps } = useHoverMediaPreview();
 
   const fetchData = async () => {
     const token = localStorage.getItem("token");
@@ -119,6 +123,7 @@ export function TabelaDex() {
   }, []);
 
   const handleEdit = (item) => {
+    clearPreview();
     setSelectedItem(item);
     setOpenModal(true);
     setFile(null);
@@ -172,6 +177,7 @@ export function TabelaDex() {
   };
 
   const handleDeleteClick = (item) => {
+    clearPreview();
     setItemToDelete(item);
     setOpenDeleteModal(true);
   };
@@ -211,17 +217,26 @@ export function TabelaDex() {
       accessorKey: "imagem",
       header: "Imagem",
       Cell: ({ row }) => (
-        <img
-          src={getImageSource(row.original)}
-          alt={row.original.nome}
-          style={{
-            width: "52px",
-            height: "72px",
-            objectFit: "cover",
-            borderRadius: "8px",
-            border: "1px solid rgba(148,163,184,0.36)",
-          }}
-        />
+        <div
+          className="mo-image-hover-trigger"
+          {...getTriggerProps({
+            title: row.original.nome || "Sem título",
+            meta: row.original.status || "Sem status",
+            image: getImageSource(row.original),
+          })}
+        >
+          <img
+            src={getImageSource(row.original)}
+            alt={row.original.nome}
+            style={{
+              width: "52px",
+              height: "72px",
+              objectFit: "cover",
+              borderRadius: "8px",
+              border: "1px solid rgba(148,163,184,0.36)",
+            }}
+          />
+        </div>
       ),
       size: 80,
     },
@@ -578,6 +593,8 @@ export function TabelaDex() {
             </Button>
           </DialogActions>
         </Dialog>
+
+        <HoverMediaPreview preview={preview} cardRef={cardRef} />
       </div>
     </ThemeProvider>
   );
