@@ -77,9 +77,15 @@ Retorna lista otimizada de usuários filtrados por prefixo, com campos `id`, `us
 ### GET `/api/MediaDex/obterMediaPorUsuario` (Authorize)
 Retorna lista de `MediaDex` do usuario logado.
 Inclui campo opcional `urlMidia` (URL pessoal para assistir/ler).
+Inclui campo calculado `capituloEsperadoAtual` (inteiro) para consistencia de progressao esperada.
 
 ### GET `/api/MediaDex/obterMediaPorUsuarioPorStatusEmAndamento` (Authorize)
 Retorna lista de `MediaDex` com status em andamento do usuario.
+Contrato reduzido de calendario (sem `urlMidia`) inclui:
+- `capituloEsperadoAtual` (inteiro calculado no backend)
+- `dataInicioRecorrencia` (`yyyy-MM-dd`)
+- `dataFimRecorrenciaExclusiva` (`yyyy-MM-dd`, opcional, usado em `endRecur`)
+- Observacao: itens que atingiram `TotalCapitulos` nao sao retornados no calendario.
 
 ### GET `/api/MediaDex/obterMediaPorUsuarioPorStatusEmAndamentoPorUsuario?usuario=...` (Authorize)
 Retorna lista de `MediaDex` com status em andamento do usuario informado por username.
@@ -96,12 +102,16 @@ Campos aceitos:
 - `ImagemDirectory`
 - `imagemUrl`
 - `urlMidia` (opcional, URL pessoal para assistir/ler)
+- Regras de validacao: `CapituloAtual` e `TotalCapitulos` (quando informados) devem ser inteiros `>= 0` e `CapituloAtual <= TotalCapitulos`.
+- Campos server-managed (nao enviados pelo front): `CapituloEsperadoBase`, `CapituloEsperadoReferenciaUtc`.
 
 ### PUT `/api/MediaDex/{id}` (Authorize)
 Aceita:
 - `multipart/form-data` (upload + campos)
 - `application/json` (edicao sem upload)
 - Campo opcional `urlMidia` em ambos os formatos.
+- Mesmas regras numericas de validacao de `POST /criar`.
+- Rebalanceia progressao esperada automaticamente ao editar progresso real.
 
 ### DELETE `/api/MediaDex/{id}` (Authorize)
 Remove registro por ID.

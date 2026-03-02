@@ -1,6 +1,7 @@
 ﻿using deskgeek.Application.Commands;
 using deskgeek.Application.DTOs;
 using deskgeek.Application.Queries;
+using deskgeek.Application.Services;
 using deskgeek.Shared;
 using FluentValidation;
 using MediatR;
@@ -19,11 +20,17 @@ namespace deskgeek.Presentation
         private readonly IMediator _mediator;
         private readonly UploadService _uploadService;
         private readonly IHttpClientFactory _httpClientFactory;
-        public MediaDexController(IMediator mediator, UploadService uploadService, IHttpClientFactory httpClientFactory)
+        private readonly IMediaProgressionService _mediaProgressionService;
+        public MediaDexController(
+            IMediator mediator,
+            UploadService uploadService,
+            IHttpClientFactory httpClientFactory,
+            IMediaProgressionService mediaProgressionService)
         {
             _mediator = mediator;
             _uploadService = uploadService;
             _httpClientFactory = httpClientFactory;
+            _mediaProgressionService = mediaProgressionService;
         }
         [HttpGet("obterMediaPorUsuario")]
         [Authorize]
@@ -34,6 +41,10 @@ namespace deskgeek.Presentation
             {
                 var id = Guid.Parse(userId);
                 var mediaDexList = await _mediator.Send(new MediaDexQuery { Id = id });
+                foreach (var item in mediaDexList)
+                {
+                    item.CapituloEsperadoAtual = _mediaProgressionService.CalcularCapituloEsperadoAtual(item);
+                }
                 return Ok(mediaDexList);
             }
             return Unauthorized();
@@ -276,6 +287,10 @@ namespace deskgeek.Presentation
                     command.Userid = Guid.Parse(userId);
                     command.Id = guild;
                     var usuarioId = await _mediator.Send(command);
+                    if (usuarioId == null)
+                    {
+                        return NotFound(new { message = "Mídia não encontrada para o usuário autenticado." });
+                    }
                     return Ok(new { Id = usuarioId });
                 }
                 return Unauthorized("Token invalido");
@@ -306,17 +321,33 @@ namespace deskgeek.Presentation
             }
         }
 
-        private static List<MediaDexCalendarioItemDto> MapCalendarioItems(IEnumerable<deskgeek.Domain.MediaDex> mediaDexList)
+        private List<MediaDexCalendarioItemDto> MapCalendarioItems(IEnumerable<deskgeek.Domain.MediaDex> mediaDexList)
         {
-            return mediaDexList.Select(item => new MediaDexCalendarioItemDto
+            var itens = new List<MediaDexCalendarioItemDto>();
+
+            foreach (var item in mediaDexList)
             {
-                Id = item.Id,
-                Nome = item.Nome,
-                Status = item.Status,
-                DiaNovoCapitulo = item.DiaNovoCapitulo,
-                ImagemDirectory = item.ImagemDirectory,
-                imagemUrl = item.imagemUrl
-            }).ToList();
+                var projecao = _mediaProgressionService.CalcularProjecaoCalendario(item);
+                if (!projecao.DeveIncluirEvento)
+                {
+                    continue;
+                }
+
+                itens.Add(new MediaDexCalendarioItemDto
+                {
+                    Id = item.Id,
+                    Nome = item.Nome,
+                    Status = item.Status,
+                    DiaNovoCapitulo = item.DiaNovoCapitulo,
+                    ImagemDirectory = item.ImagemDirectory,
+                    imagemUrl = item.imagemUrl,
+                    CapituloEsperadoAtual = projecao.CapituloEsperadoAtual,
+                    DataInicioRecorrencia = projecao.DataInicioRecorrencia,
+                    DataFimRecorrenciaExclusiva = projecao.DataFimRecorrenciaExclusiva
+                });
+            }
+
+            return itens;
         }
 
     }

@@ -31,6 +31,12 @@ namespace deskgeek.Migrations
                     b.Property<string>("CapituloAtual")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("CapituloEsperadoBase")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("CapituloEsperadoReferenciaUtc")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("DiaNovoCapitulo")
                         .HasColumnType("nvarchar(max)");
 
