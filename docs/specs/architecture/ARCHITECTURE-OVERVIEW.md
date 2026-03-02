@@ -30,6 +30,8 @@
 - Integracao externa distribuida entre front (AniList/TVMaze/Wikipedia) e back proxy (MangaDex).
 - `MediaDex` possui `urlMidia` opcional para uso pessoal (assistir/ler).
 - Endpoints de calendario usam contrato reduzido sem `urlMidia` para evitar exposicao em consultas por username.
+- Progressao esperada semanal de `MediaDex` e calculada dinamicamente no backend (sem job), com referencia em `America/Sao_Paulo`.
+- Calendario usa recorrencia com janela (`startRecur/endRecur`) para evitar eventos infinitos quando `TotalCapitulos` e conhecido.
 
 ## Stack de testes backend
 - Framework: xUnit

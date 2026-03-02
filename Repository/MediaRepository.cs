@@ -22,6 +22,10 @@ namespace deskgeek.Repository
             var list = await _context.MediaDex.Where(x => x.UserId == id).ToListAsync();
             return list;
         }
+        public async Task<MediaDex?> GetByIdAndUserIdAsync(Guid mediaId, Guid userId)
+        {
+            return await _context.MediaDex.FirstOrDefaultAsync(x => x.Id == mediaId && x.UserId == userId);
+        }
         public async Task AddAsync(MediaDex usuario)
         {
             await _context.MediaDex.AddAsync(usuario);

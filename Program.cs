@@ -1,4 +1,5 @@
 using deskgeek.Application.Behaviors;
+using deskgeek.Application.Services;
 using deskgeek.Application.Commands;
 using deskgeek.Domain;
 using deskgeek.Infra;
@@ -112,6 +113,8 @@ var configuration = new MapperConfiguration(cfg =>
 
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IMapper>(sp => configuration.CreateMapper());
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<IMediaProgressionService, MediaProgressionService>();
 builder.Services.AddHttpClient();
 
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();

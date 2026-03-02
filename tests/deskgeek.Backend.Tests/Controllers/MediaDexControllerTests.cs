@@ -1,4 +1,5 @@
 using deskgeek.Application.Queries;
+using deskgeek.Application.Services;
 using deskgeek.Domain;
 using deskgeek.Presentation;
 using deskgeek.Shared;
@@ -50,6 +51,41 @@ public class MediaDexControllerTests
         Assert.NotNull(firstItem.GetType().GetProperty("imagemUrl"));
     }
 
+    [Fact]
+    public async Task ObterMediaPorUsuarioPorStatusEmAndamento_ShouldSkipItem_WhenTotalCapitulosFoiAtingido()
+    {
+        var mediatorMock = new Mock<IMediator>();
+        mediatorMock
+            .Setup(m => m.Send(It.IsAny<MediaDexEmAndamentoQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<MediaDex>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = Guid.NewGuid(),
+                    Nome = "Mini serie",
+                    Status = "Em andamento",
+                    DiaNovoCapitulo = "Domingo",
+                    CapituloAtual = "10",
+                    TotalCapitulos = "10",
+                    CapituloEsperadoBase = 10,
+                    CapituloEsperadoReferenciaUtc = DateTimeOffset.UtcNow.AddDays(-14)
+                }
+            });
+
+        var controller = BuildController(mediatorMock.Object);
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = BuildHttpContextWithUser()
+        };
+
+        var result = await controller.ObterMediaPorUsuarioPorStatusEmAndamento();
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var payload = Assert.IsAssignableFrom<IEnumerable<object>>(okResult.Value);
+        Assert.Empty(payload);
+    }
+
     private static MediaDexController BuildController(IMediator mediator)
     {
         var uploadService = new UploadService(
@@ -60,7 +96,9 @@ public class MediaDexControllerTests
         var httpClientFactoryMock = new Mock<IHttpClientFactory>();
         httpClientFactoryMock.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
 
-        return new MediaDexController(mediator, uploadService, httpClientFactoryMock.Object);
+        var progressionService = new MediaProgressionService(TimeProvider.System);
+
+        return new MediaDexController(mediator, uploadService, httpClientFactoryMock.Object, progressionService);
     }
 
     private static HttpContext BuildHttpContextWithUser()

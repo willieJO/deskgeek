@@ -11,6 +11,8 @@ namespace deskgeek.Domain
         public string Nome { get; set; }    
         public string? TotalCapitulos { get; set; }
         public string? CapituloAtual { get; set; }
+        public int? CapituloEsperadoBase { get; set; }
+        public DateTimeOffset? CapituloEsperadoReferenciaUtc { get; set; }
         public string? Status { get; set; }
         public string? TipoMidia { get; set; }
         public string? DiaNovoCapitulo { get; set; }
@@ -19,5 +21,7 @@ namespace deskgeek.Domain
         public string? ImagemDirectory { get; set; }
         public string? imagemUrl { get; set; }
         public string? UrlMidia { get; set; }
+        [NotMapped]
+        public int? CapituloEsperadoAtual { get; set; }
     }
 }

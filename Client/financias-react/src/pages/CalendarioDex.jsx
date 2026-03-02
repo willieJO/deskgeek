@@ -158,6 +158,8 @@ export default function CalendarioDex({ currentUser }) {
 
         const eventosFullCalendar = data.map((item) => {
           const dayIndex = diaSemanaMap[item.diaNovoCapitulo?.toLowerCase()] ?? 4;
+          const startRecur = item.dataInicioRecorrencia || new Date().toISOString().slice(0, 10);
+          const endRecur = item.dataFimRecorrenciaExclusiva || undefined;
 
           let urlImagem = "https://placehold.co/50x70?text=No+Image&font=roboto";
           if (item.imagemDirectory) {
@@ -170,6 +172,8 @@ export default function CalendarioDex({ currentUser }) {
             id: item.id,
             title: item.nome,
             daysOfWeek: [dayIndex],
+            startRecur,
+            endRecur,
             display: "block",
             classNames: ["cal-event-card"],
             extendedProps: {

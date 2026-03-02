@@ -8,5 +8,8 @@ namespace deskgeek.Application.DTOs
         public string? DiaNovoCapitulo { get; set; }
         public string? ImagemDirectory { get; set; }
         public string? imagemUrl { get; set; }
+        public int? CapituloEsperadoAtual { get; set; }
+        public string? DataInicioRecorrencia { get; set; }
+        public string? DataFimRecorrenciaExclusiva { get; set; }
     }
 }

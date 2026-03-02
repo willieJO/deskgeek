@@ -19,6 +19,11 @@ Exibir distribuicao semanal das obras em andamento com dia de lancamento definid
 - `CAL-PRD-008`: tela deve exibir banner explícito ao visualizar calendario de terceiro.
 - `CAL-PRD-009`: usuario logado nao deve aparecer nas sugestoes de busca.
 - `CAL-PRD-010`: se `usuario` informado for o proprio usuario logado, o sistema deve carregar o calendario proprio.
+- `CAL-PRD-011`: calendario deve usar progressao esperada semanal (episodio "que deveria estar"), calculada no backend.
+- `CAL-PRD-012`: incremento semanal ocorre apenas para `Em andamento` com `diaNovoCapitulo` informado.
+- `CAL-PRD-013`: se houver `TotalCapitulos`, progressao esperada nao pode ultrapassar o total.
+- `CAL-PRD-014`: ao atingir total, item sai do calendario (sem recorrencia infinita).
+- `CAL-PRD-015`: calendario exibe somente recorrencias de hoje em diante (sem historico passado).
 
 ## Fluxo principal
 1. Usuario abre calendario.
@@ -36,3 +41,6 @@ Exibir distribuicao semanal das obras em andamento com dia de lancamento definid
 - `AC-CAL-007`: banner de contexto indica claramente quando o calendario exibido e de terceiro.
 - `AC-CAL-008`: usuario logado nao aparece nas sugestoes.
 - `AC-CAL-009`: informar o proprio usuario (incluindo variacao de caixa) retorna para o calendario proprio.
+- `AC-CAL-010`: progresso esperado incrementa 1 por semana no dia de lancamento configurado.
+- `AC-CAL-011`: se usuario avanca manualmente o progresso real acima do esperado, o esperado rebaseia para esse novo valor.
+- `AC-CAL-012`: para obras com total definido, eventos futuros encerram automaticamente no episodio final.
