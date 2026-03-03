@@ -50,6 +50,45 @@ namespace deskgeek.Presentation
             return Unauthorized();
         }
 
+        [HttpGet("{id:guid}")]
+        [Authorize]
+        public async Task<IActionResult> ObterMediaDetalhePorId(Guid id)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var media = await _mediator.Send(new MediaDexByIdQuery
+            {
+                Id = id,
+                UserId = userId
+            });
+
+            if (media == null)
+            {
+                return NotFound(new { message = "Mídia não encontrada para o usuário autenticado." });
+            }
+
+            var detalhe = new MediaDexDetalheEdicaoDto
+            {
+                Id = media.Id,
+                Nome = media.Nome,
+                TipoMidia = media.TipoMidia,
+                Status = media.Status,
+                DiaNovoCapitulo = media.DiaNovoCapitulo,
+                TotalCapitulos = media.TotalCapitulos,
+                CapituloAtual = media.CapituloAtual,
+                ImagemDirectory = media.ImagemDirectory,
+                imagemUrl = media.imagemUrl,
+                UrlMidia = media.UrlMidia,
+                CapituloEsperadoAtual = _mediaProgressionService.CalcularCapituloEsperadoAtual(media)
+            };
+
+            return Ok(detalhe);
+        }
+
         [HttpGet("obterMediaPorUsuarioPorStatusEmAndamento")]
         [Authorize]
         public async Task<IActionResult> ObterMediaPorUsuarioPorStatusEmAndamento()

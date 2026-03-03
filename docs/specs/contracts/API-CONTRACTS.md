@@ -79,6 +79,26 @@ Retorna lista de `MediaDex` do usuario logado.
 Inclui campo opcional `urlMidia` (URL pessoal para assistir/ler).
 Inclui campo calculado `capituloEsperadoAtual` (inteiro) para consistencia de progressao esperada.
 
+### GET `/api/MediaDex/{id}` (Authorize)
+Retorna detalhes editaveis de uma mídia do usuario logado.
+Sucesso: `200` com:
+```json
+{
+  "id": "guid",
+  "nome": "string",
+  "tipoMidia": "string|null",
+  "status": "string|null",
+  "diaNovoCapitulo": "string|null",
+  "totalCapitulos": "string|null",
+  "capituloAtual": "string|null",
+  "imagemDirectory": "string|null",
+  "imagemUrl": "string|null",
+  "urlMidia": "string|null",
+  "capituloEsperadoAtual": 0
+}
+```
+Falha: `404` quando a mídia nao existe para o usuario autenticado.
+
 ### GET `/api/MediaDex/obterMediaPorUsuarioPorStatusEmAndamento` (Authorize)
 Retorna lista de `MediaDex` com status em andamento do usuario.
 Contrato reduzido de calendario (sem `urlMidia`) inclui:

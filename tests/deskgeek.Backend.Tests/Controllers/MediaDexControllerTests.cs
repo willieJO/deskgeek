@@ -16,6 +16,66 @@ namespace deskgeek.Backend.Tests.Controllers;
 public class MediaDexControllerTests
 {
     [Fact]
+    public async Task ObterMediaDetalhePorId_ShouldReturnOk_WhenMediaBelongsToAuthenticatedUser()
+    {
+        var mediaId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var mediatorMock = new Mock<IMediator>();
+        mediatorMock
+            .Setup(m => m.Send(
+                It.Is<MediaDexByIdQuery>(q => q.Id == mediaId && q.UserId == userId),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MediaDex
+            {
+                Id = mediaId,
+                UserId = userId,
+                Nome = "Steins;Gate",
+                TipoMidia = "Anime",
+                Status = "Em andamento",
+                DiaNovoCapitulo = "Sexta-feira",
+                TotalCapitulos = "24",
+                CapituloAtual = "8",
+                imagemUrl = "https://example.com/image.jpg",
+                UrlMidia = "https://example.com/watch"
+            });
+
+        var controller = BuildController(mediatorMock.Object);
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = BuildHttpContextWithUser(userId)
+        };
+
+        var result = await controller.ObterMediaDetalhePorId(mediaId);
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.NotNull(okResult.Value);
+        Assert.NotNull(okResult.Value!.GetType().GetProperty("UrlMidia"));
+        Assert.NotNull(okResult.Value!.GetType().GetProperty("CapituloEsperadoAtual"));
+    }
+
+    [Fact]
+    public async Task ObterMediaDetalhePorId_ShouldReturnNotFound_WhenMediaDoesNotBelongToAuthenticatedUser()
+    {
+        var mediaId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var mediatorMock = new Mock<IMediator>();
+        mediatorMock
+            .Setup(m => m.Send(It.IsAny<MediaDexByIdQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MediaDex?)null);
+
+        var controller = BuildController(mediatorMock.Object);
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = BuildHttpContextWithUser(userId)
+        };
+
+        var result = await controller.ObterMediaDetalhePorId(mediaId);
+
+        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+        Assert.NotNull(notFoundResult.Value);
+    }
+
+    [Fact]
     public async Task ObterMediaPorUsuarioPorStatusEmAndamento_ShouldNotExposeUrlMidia()
     {
         var mediatorMock = new Mock<IMediator>();
@@ -103,11 +163,16 @@ public class MediaDexControllerTests
 
     private static HttpContext BuildHttpContextWithUser()
     {
+        return BuildHttpContextWithUser(Guid.NewGuid());
+    }
+
+    private static HttpContext BuildHttpContextWithUser(Guid userId)
+    {
         var httpContext = new DefaultHttpContext();
         var identity = new ClaimsIdentity(
             new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString())
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString())
             },
             "TestAuth");
 

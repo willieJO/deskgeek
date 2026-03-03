@@ -138,6 +138,10 @@
   background: rgba(8, 22, 43, 0.97);
 }
 
+.cal-event-content--editable {
+  cursor: pointer;
+}
+
 .cal-user-search-item {
   width: 100%;
   display: flex;
