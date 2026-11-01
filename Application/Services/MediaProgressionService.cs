@@ -7,6 +7,7 @@ namespace deskgeek.Application.Services;
 public interface IMediaProgressionService
 {
     int CalcularCapituloEsperadoAtual(MediaDex media);
+    int CalcularCapituloEsperadoNaData(MediaDex media, DateOnly date);
     MediaCalendarioProjection CalcularProjecaoCalendario(MediaDex media);
 }
 
@@ -34,6 +35,8 @@ public sealed class MediaProgressionService : IMediaProgressionService
         var calculo = CalcularInterno(media);
         return calculo.CapituloEsperadoAtual;
     }
+
+    public int CalcularCapituloEsperadoNaData(MediaDex media, DateOnly date) => CalcularInterno(media, date).CapituloEsperadoAtual;
 
     public MediaCalendarioProjection CalcularProjecaoCalendario(MediaDex media)
     {
@@ -92,10 +95,10 @@ public sealed class MediaProgressionService : IMediaProgressionService
         };
     }
 
-    private MediaCalculoInterno CalcularInterno(MediaDex media)
+    private MediaCalculoInterno CalcularInterno(MediaDex media, DateOnly? referenceDate = null)
     {
         var nowUtc = _timeProvider.GetUtcNow();
-        var hojeLocal = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(nowUtc, SaoPauloTimeZone).DateTime);
+        var hojeLocal = referenceDate ?? DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(nowUtc, SaoPauloTimeZone).DateTime);
 
         var capituloAtual = ParseIntNaoNegativo(media.CapituloAtual) ?? 0;
         var totalCapitulos = ParseIntNaoNegativo(media.TotalCapitulos);

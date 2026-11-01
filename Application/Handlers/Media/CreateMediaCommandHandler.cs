@@ -61,6 +61,7 @@ namespace deskgeek.Application.Handlers
 
                 var savedFileName = await _uploadService.UploadImageToServer(imageBytes, request.ImagemUpload.FileName);
                 objMedia.ImagemDirectory = savedFileName;
+                objMedia.imagemUrl = null;
             }
 
             await _repository.AddAsync(objMedia);

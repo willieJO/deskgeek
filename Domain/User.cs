@@ -1,4 +1,4 @@
-﻿namespace deskgeek.Domain
+namespace deskgeek.Domain
 {
     public class User
     {
@@ -6,6 +6,7 @@
         public string Usuario { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Senha { get; set; } = string.Empty;
+        public bool ReceberEmailsLancamentos { get; set; } = true;
         public string? FotoPerfilArquivo { get; set; }
     }
 }

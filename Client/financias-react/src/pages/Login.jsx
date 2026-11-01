@@ -1,3 +1,4 @@
+import AuthLayout from "../components/AuthLayout";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ButtonSpinner from "../components/ButtonSpinner";
@@ -12,6 +13,7 @@ export default function Login({ onLogin }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (isSubmitting) return;
     setIsSubmitting(true);
     setMessage("");
 
@@ -27,84 +29,102 @@ export default function Login({ onLogin }) {
       }
 
       if (response.data?.success) {
-        setMessage("Login realizado com sucesso.");
-        await onLogin?.();
-        navigate("/dashboard");
+        const session = await onLogin?.();
+        if (onLogin && !session) {
+          setMessage(
+            "Suas credenciais foram aceitas, mas não foi possível carregar seu perfil. Tente novamente em instantes.",
+          );
+          return;
+        }
+        navigate("/tabeladex");
       } else {
         setMessage(response.data?.message || "Email ou senha inválidos.");
       }
     } catch (error) {
-      setMessage(error?.response?.data?.message || "Erro ao conectar com o servidor.");
+      setMessage(
+        error?.response?.data?.message || "Erro ao conectar com o servidor.",
+      );
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <div className="auth-shell">
-      <div className="auth-card page-surface fade-slide-in">
-        <p className="section-tag">MediaDex</p>
-        <h1 className="section-title">Entrar na sua conta</h1>
-        <p className="section-subtitle">
-          Acesse seu painel para acompanhar capítulos, obras e calendário.
+    <AuthLayout>
+      <p className="section-tag">Bem-vindo de volta</p>
+      <h1 className="section-title">Entrar na sua conta</h1>
+      <p className="section-subtitle">
+        Suas histórias estão esperando. Entre para continuar de onde parou.
+      </p>
+
+      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <div>
+          <label className="ui-label" htmlFor="email">
+            Email
+          </label>
+          <input
+            id="email"
+            autoComplete="email"
+            type="email"
+            placeholder="voce@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="ui-input"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="ui-label" htmlFor="password">
+            Senha
+          </label>
+          <input
+            id="password"
+            autoComplete="current-password"
+            type="password"
+            placeholder="Sua senha"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="ui-input"
+            required
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="ui-button w-full"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <ButtonSpinner />
+              Entrando...
+            </>
+          ) : (
+            "Entrar"
+          )}
+        </button>
+      </form>
+
+      {message && (
+        <p
+          role="alert"
+          className="mt-4 rounded-lg border border-slate-500/30 bg-slate-900/45 px-3 py-2 text-sm text-slate-200"
+        >
+          {message}
         </p>
+      )}
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div>
-            <label className="ui-label" htmlFor="email">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              placeholder="voce@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="ui-input"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="ui-label" htmlFor="password">
-              Senha
-            </label>
-            <input
-              id="password"
-              type="password"
-              placeholder="Sua senha"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="ui-input"
-              required
-            />
-          </div>
-
-          <button type="submit" className="ui-button w-full" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <ButtonSpinner />
-                Entrando...
-              </>
-            ) : (
-              "Entrar"
-            )}
-          </button>
-        </form>
-
-        {message && (
-          <p className="mt-4 rounded-lg border border-slate-500/30 bg-slate-900/45 px-3 py-2 text-sm text-slate-200">
-            {message}
-          </p>
-        )}
-
-        <p className="mt-6 text-center text-sm text-slate-400">
-          Ainda não tem conta?{" "}
-          <button onClick={() => navigate("/register")} className="ui-link" type="button">
-            Criar agora
-          </button>
-        </p>
-      </div>
-    </div>
+      <p className="mt-6 text-center text-sm text-slate-400">
+        Ainda não tem conta?{" "}
+        <button
+          onClick={() => navigate("/register")}
+          className="ui-link"
+          type="button"
+        >
+          Criar agora
+        </button>
+      </p>
+    </AuthLayout>
   );
 }

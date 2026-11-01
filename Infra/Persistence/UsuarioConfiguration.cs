@@ -1,4 +1,4 @@
-﻿using deskgeek.Domain;
+using deskgeek.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -22,6 +22,7 @@ namespace deskgeek.Infra.Persistence
             builder.Property(x => x.Senha)
                 .IsRequired()
                 .HasMaxLength(200);
+            builder.Property(x => x.ReceberEmailsLancamentos).HasDefaultValue(true);
             builder.Property(x => x.FotoPerfilArquivo)
                 .HasMaxLength(255);
 

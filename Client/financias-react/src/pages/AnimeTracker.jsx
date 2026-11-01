@@ -1,3 +1,9 @@
+import MediaCover from "../components/MediaCover";
+import { bestAniListCover } from "../utils/coverImages";
+import EmailReminderToggle from "../components/EmailReminderToggle";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Library, Search, Sparkles } from "lucide-react";
+import fallbackCover from "../assets/media-placeholder.svg";
 import { useState, useEffect } from "react";
 import { request, gql } from "graphql-request";
 import api from "../utils/api";
@@ -8,7 +14,6 @@ const anilistEndpoint = "https://graphql.anilist.co";
 const tvMazeEndpoint = "https://api.tvmaze.com";
 const wikipediaPtEndpoint = "https://pt.wikipedia.org/w/api.php";
 const wikipediaEnEndpoint = "https://en.wikipedia.org/w/api.php";
-const fallbackCover = "https://placehold.co/120x168?text=No+Image&font=roboto";
 
 const anilistQuery = gql`
   query ($search: String, $type: MediaType) {
@@ -19,6 +24,8 @@ const anilistQuery = gql`
           romaji
         }
         coverImage {
+          extraLarge
+          large
           medium
         }
         episodes
@@ -110,6 +117,7 @@ function buildMangadexCoverProxyUrl(mangaId, fileName) {
 }
 
 export default function MediaTracker() {
+  const navigate = useNavigate();
   const [tipo, setTipo] = useState("ANIME");
   const [busca, setBusca] = useState("");
   const [sugestoes, setSugestoes] = useState([]);
@@ -123,22 +131,33 @@ export default function MediaTracker() {
   const [novoTitulo, setNovoTitulo] = useState("");
   const [novaImagemFile, setNovaImagemFile] = useState(null);
   const [novaImagemPreview, setNovaImagemPreview] = useState(null);
+
+  useEffect(
+    () => () => {
+      if (novaImagemPreview) URL.revokeObjectURL(novaImagemPreview);
+    },
+    [novaImagemPreview],
+  );
   const [novoTotalCapitulos, setNovoTotalCapitulos] = useState("");
   const [novoStatus, setNovoStatus] = useState("Em andamento");
   const [novoCapituloAtual, setNovoCapituloAtual] = useState("");
   const [diaNovosCapitulos, setDiaNovosCapitulos] = useState("");
   const [urlMidia, setUrlMidia] = useState("");
+  const [notificarLancamentos, setNotificarLancamentos] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
   async function buscarAnilist(search, type) {
     if (!search) return [];
     try {
-      const data = await request(anilistEndpoint, anilistQuery, { search, type });
+      const data = await request(anilistEndpoint, anilistQuery, {
+        search,
+        type,
+      });
       return data.Page.media.map((item) => ({
         id: item.id,
         title: { romaji: item.title?.romaji || "Título indisponível" },
-        coverImage: { medium: normalizeCover(item.coverImage?.medium) },
+        coverUrl: normalizeCover(bestAniListCover(item.coverImage)),
         episodes: item.episodes,
         chapters: item.chapters,
         total: item.episodes ?? item.chapters ?? null,
@@ -159,16 +178,20 @@ export default function MediaTracker() {
       const includedCoverMap = new Map(
         (json?.included || [])
           .filter((entry) => entry?.type === "cover_art")
-          .map((entry) => [entry.id, entry?.attributes?.fileName])
+          .map((entry) => [entry.id, entry?.attributes?.fileName]),
       );
 
       return (json?.data || []).map((item) => {
         const attributes = item.attributes || {};
         const titleObj = attributes.title || {};
-        const titleRomaji = titleObj.en || Object.values(titleObj)[0] || "Título indisponível";
+        const titleRomaji =
+          titleObj.en || Object.values(titleObj)[0] || "Título indisponível";
 
-        const coverRel = (item.relationships || []).find((rel) => rel.type === "cover_art");
-        const coverFile = coverRel?.attributes?.fileName || includedCoverMap.get(coverRel?.id);
+        const coverRel = (item.relationships || []).find(
+          (rel) => rel.type === "cover_art",
+        );
+        const coverFile =
+          coverRel?.attributes?.fileName || includedCoverMap.get(coverRel?.id);
         const coverUrl = coverFile
           ? buildMangadexCoverProxyUrl(item.id, coverFile)
           : "";
@@ -176,7 +199,7 @@ export default function MediaTracker() {
         return {
           id: item.id,
           title: { romaji: titleRomaji },
-          coverImage: { medium: normalizeCover(coverUrl) },
+          coverUrl: normalizeCover(coverUrl),
           episodes: null,
           chapters: attributes.chapterCount || null,
           total: attributes.chapterCount || null,
@@ -191,7 +214,9 @@ export default function MediaTracker() {
   async function buscarSeries(search) {
     if (!search) return [];
     try {
-      const res = await fetch(`${tvMazeEndpoint}/search/shows?q=${encodeURIComponent(search)}`);
+      const res = await fetch(
+        `${tvMazeEndpoint}/search/shows?q=${encodeURIComponent(search)}`,
+      );
       const json = await res.json();
 
       return (json || []).slice(0, 10).map((item) => {
@@ -199,7 +224,7 @@ export default function MediaTracker() {
         return {
           id: show.id,
           title: { romaji: show.name || "Série sem nome" },
-          coverImage: { medium: normalizeCover(show.image?.medium || show.image?.original) },
+          coverUrl: normalizeCover(show.image?.original || show.image?.medium),
           episodes: null,
           chapters: null,
           total: null,
@@ -216,8 +241,8 @@ export default function MediaTracker() {
     try {
       const buildWikiUrl = (endpoint, term) =>
         `${endpoint}?action=query&format=json&origin=*&generator=search&gsrsearch=${encodeURIComponent(
-          term
-        )}&gsrlimit=10&prop=pageimages|info&piprop=thumbnail&pithumbsize=300&inprop=url`;
+          term,
+        )}&gsrlimit=10&prop=pageimages|info&piprop=thumbnail&pithumbsize=600&inprop=url`;
 
       const mapWikiPages = (json) => {
         const pages = Object.values(json?.query?.pages || {});
@@ -228,7 +253,7 @@ export default function MediaTracker() {
           .map((item) => ({
             id: item.pageid,
             title: { romaji: item.title || "Filme sem nome" },
-            coverImage: { medium: normalizeCover(item.thumbnail?.source || "") },
+            coverUrl: normalizeCover(item.thumbnail?.source || ""),
             episodes: null,
             chapters: null,
             total: 1,
@@ -236,14 +261,18 @@ export default function MediaTracker() {
           }));
       };
 
-      const resPt = await fetch(buildWikiUrl(wikipediaPtEndpoint, `${search} filme`));
+      const resPt = await fetch(
+        buildWikiUrl(wikipediaPtEndpoint, `${search} filme`),
+      );
       const jsonPt = await resPt.json();
       const ptResultados = mapWikiPages(jsonPt);
       if (ptResultados.length > 0) {
         return ptResultados;
       }
 
-      const resEn = await fetch(buildWikiUrl(wikipediaEnEndpoint, `${search} film`));
+      const resEn = await fetch(
+        buildWikiUrl(wikipediaEnEndpoint, `${search} film`),
+      );
       const jsonEn = await resEn.json();
       const enResultados = mapWikiPages(jsonEn);
       if (enResultados.length > 0) {
@@ -339,6 +368,7 @@ export default function MediaTracker() {
   };
 
   const resetSearchState = () => {
+    setNotificarLancamentos(true);
     setSelecionado(null);
     setUltimaSelecaoValida(null);
     setSugestoes([]);
@@ -380,7 +410,10 @@ export default function MediaTracker() {
       totalCapitulos = novoTotalParsed === "" ? fallbackTotal : novoTotalParsed;
     } else {
       const totalSelecionado =
-        itemSelecionado.total ?? itemSelecionado.chapters ?? itemSelecionado.episodes ?? fallbackTotal;
+        itemSelecionado.total ??
+        itemSelecionado.chapters ??
+        itemSelecionado.episodes ??
+        fallbackTotal;
       totalCapitulos = totalSelecionado ?? fallbackTotal;
     }
 
@@ -390,12 +423,19 @@ export default function MediaTracker() {
 
     const statusAtual = criandoNovo ? novoStatus : status;
 
+    formData.append("NotificarLancamentos", String(notificarLancamentos));
     formData.append("Nome", nome);
     formData.append("TipoMidia", tipoLabel);
     formData.append("TotalCapitulos", String(totalCapitulos));
-    formData.append("CapituloAtual", capAtualEnviar === "" ? "" : String(capAtualEnviar));
+    formData.append(
+      "CapituloAtual",
+      capAtualEnviar === "" ? "" : String(capAtualEnviar),
+    );
     formData.append("Status", statusAtual);
-    formData.append("DiaNovoCapitulo", isTipoFilme(tipo) ? "" : diaNovosCapitulos);
+    formData.append(
+      "DiaNovoCapitulo",
+      isTipoFilme(tipo) ? "" : diaNovosCapitulos,
+    );
     if (urlMidia.trim()) {
       formData.append("urlMidia", urlMidia.trim());
     }
@@ -403,10 +443,10 @@ export default function MediaTracker() {
     if (criandoNovo && novaImagemFile) {
       formData.append("ImagemUpload", novaImagemFile);
     } else if (
-      itemSelecionado?.coverImage?.medium &&
-      !String(itemSelecionado.coverImage.medium).includes("placehold.co")
+      itemSelecionado?.coverUrl &&
+      itemSelecionado.coverUrl !== fallbackCover
     ) {
-      formData.append("imagemUrl", itemSelecionado.coverImage.medium);
+      formData.append("imagemUrl", itemSelecionado.coverUrl);
     }
 
     try {
@@ -417,9 +457,7 @@ export default function MediaTracker() {
       if (res.status === 200) {
         setUrlMidia("");
         toast.success("Cadastro realizado com sucesso.");
-        setTimeout(() => {
-          window.location.reload();
-        }, 900);
+        navigate("/tabeladex");
       } else {
         toast.error("Erro no servidor.");
       }
@@ -434,20 +472,36 @@ export default function MediaTracker() {
   const itemSelecionado = selecionado || ultimaSelecaoValida;
 
   return (
-    <div className="app-shell">
-      <div className="mx-auto w-full max-w-5xl space-y-5">
-        <section className="page-surface fade-slide-in p-5 sm:p-7">
-          <p className="section-tag">Coleção</p>
-          <h1 className="section-title">Acompanhar Anime, Mangá, Manhua, Série e Filme</h1>
+    <div className="tracker-page">
+      <div className="space-y-5">
+        <div className="tracker-heading">
+          <Link
+            to="/tabeladex"
+            className="ui-link inline-flex items-center gap-2 text-xs mb-6"
+          >
+            <ArrowLeft size={15} /> Voltar para biblioteca
+          </Link>
+          <p className="section-tag block">Descubra sua próxima história</p>
+          <h1 className="section-title">
+            Adicionar obra<span className="title-dot">.</span>
+          </h1>
           <p className="section-subtitle">
-            Busque uma obra e registre progresso. Se não existir, crie manualmente com
-            capa e dados personalizados.
+            Anime, mangá, manhua, série ou filme. Seu próximo favorito tem lugar
+            aqui.
           </p>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
+        </div>
+        <section className="page-surface fade-slide-in p-5 sm:p-7">
+          <h2 className="tracker-step">
+            <span>01</span>
+            <Search size={18} /> Encontre uma obra
+          </h2>
+          <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="ui-label">Tipo</label>
+              <label className="ui-label" htmlFor="tracker-field-1">
+                Tipo
+              </label>
               <select
+                id="tracker-field-1"
                 className="ui-select"
                 value={tipo}
                 onChange={(e) => {
@@ -464,8 +518,11 @@ export default function MediaTracker() {
             </div>
 
             <div className="relative">
-              <label className="ui-label">Busca</label>
+              <label className="ui-label" htmlFor="tracker-field-2">
+                Busca
+              </label>
               <input
+                id="tracker-field-2"
                 type="text"
                 placeholder={`Digite o nome de ${getTipoLabel(tipo).toLowerCase()}...`}
                 className="ui-input"
@@ -474,7 +531,10 @@ export default function MediaTracker() {
                   const novoValorBusca = e.target.value;
                   setBusca(novoValorBusca);
 
-                  if (itemSelecionado && novoValorBusca !== itemSelecionado.title.romaji) {
+                  if (
+                    itemSelecionado &&
+                    novoValorBusca !== itemSelecionado.title.romaji
+                  ) {
                     setSelecionado(null);
                     setUltimaSelecaoValida(null);
                   }
@@ -487,23 +547,21 @@ export default function MediaTracker() {
               />
 
               {sugestoes.length > 0 && !itemSelecionado && !criandoNovo && (
-                <ul className="absolute z-20 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-slate-500/40 bg-[rgba(8,16,32,0.97)] p-1 shadow-2xl">
+                <ul className="absolute z-20 mt-2 max-h-64 w-full overflow-y-auto rounded-xl border border-slate-500/40 bg-slate-900 p-1 shadow-2xl">
                   {sugestoes.map((item) => (
                     <li key={item.id}>
                       <button
                         onClick={() => handleSelecionar(item)}
-                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-cyan-300/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"
+                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-violet-300/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/50"
                       >
-                        <img
-                          src={normalizeCover(item.coverImage?.medium)}
-                          alt={item.title.romaji}
+                        <MediaCover
+                          src={normalizeCover(item.coverUrl)}
+                          alt=""
                           className="h-14 w-10 rounded-md object-cover"
-                          onError={(e) => {
-                            e.currentTarget.onerror = null;
-                            e.currentTarget.src = fallbackCover;
-                          }}
                         />
-                        <span className="text-sm text-slate-100">{item.title.romaji}</span>
+                        <span className="text-sm text-slate-100">
+                          {item.title.romaji}
+                        </span>
                       </button>
                     </li>
                   ))}
@@ -511,27 +569,50 @@ export default function MediaTracker() {
               )}
 
               {isSearching && !itemSelecionado && !criandoNovo && (
-                <p className="mt-2 text-sm text-slate-300">Buscando sugestões...</p>
+                <p className="mt-2 text-sm text-slate-300">
+                  Buscando sugestões...
+                </p>
               )}
             </div>
           </div>
 
-          {sugestoes.length === 0 && busca.length >= 2 && !itemSelecionado && !criandoNovo && (
-            <button onClick={handleCriarNovoClick} className="ui-link mt-4 text-sm" type="button">
-              Não encontrou? Clique para cadastrar manualmente.
-            </button>
-          )}
+          {sugestoes.length === 0 &&
+            busca.length >= 2 &&
+            !itemSelecionado &&
+            !criandoNovo && (
+              <button
+                onClick={handleCriarNovoClick}
+                className="ui-link mt-4 text-sm"
+                type="button"
+              >
+                Não encontrou? Clique para cadastrar manualmente.
+              </button>
+            )}
         </section>
 
+        {!itemSelecionado && !criandoNovo && (
+          <div className="tracker-hint">
+            <Sparkles size={18} />
+            <p>
+              Escolha um tipo de mídia e busque pelo título. Você também pode
+              cadastrar sua própria obra quando ela não aparecer nos resultados.
+            </p>
+          </div>
+        )}
+
         {criandoNovo && (
-          <section className="page-surface fade-slide-in space-y-4 border border-cyan-300/40 p-5 sm:p-6">
-            <h2 className="text-xl font-semibold text-slate-50">
-              Novo {getTipoLabel(tipo).toLowerCase()}
+          <section className="page-surface fade-slide-in space-y-4 border border-violet-300/40 p-5 sm:p-6">
+            <h2 className="tracker-step">
+              <span>02</span>
+              <Library size={18} /> Personalize sua obra
             </h2>
 
             <div>
-              <label className="ui-label">Título</label>
+              <label className="ui-label" htmlFor="tracker-field-3">
+                Título
+              </label>
               <input
+                id="tracker-field-3"
                 type="text"
                 className="ui-input"
                 value={novoTitulo}
@@ -540,8 +621,11 @@ export default function MediaTracker() {
             </div>
 
             <div>
-              <label className="ui-label">URL para assistir/ler (opcional)</label>
+              <label className="ui-label" htmlFor="tracker-field-4">
+                URL para assistir/ler (opcional)
+              </label>
               <input
+                id="tracker-field-4"
                 type="url"
                 placeholder="https://..."
                 className="ui-input"
@@ -551,24 +635,29 @@ export default function MediaTracker() {
             </div>
 
             <div>
-              <label className="ui-label">Imagem</label>
+              <span className="ui-label">Imagem</span>
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleImagemChange}
                 id="upload-image"
-                className="hidden"
+                className="sr-only"
               />
 
               <label
                 htmlFor="upload-image"
-                className="ui-button-secondary inline-block cursor-pointer px-4 py-2 text-sm"
+                className="ui-button-secondary inline-block cursor-pointer px-4 py-2 text-sm upload-button"
               >
                 Selecionar imagem
               </label>
+              <p className="mt-2 text-xs text-slate-400">
+                O arquivo é enviado na resolução original, sem compressão.
+                Prefira uma capa de boa resolução para manter a nitidez nos
+                cards.
+              </p>
 
               {novaImagemPreview && (
-                <img
+                <MediaCover
                   src={novaImagemPreview}
                   alt="Preview"
                   className="mt-3 h-36 w-24 rounded-md border border-slate-500/40 object-cover"
@@ -578,8 +667,11 @@ export default function MediaTracker() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="ui-label">{labels.totalLabel}</label>
+                <label className="ui-label" htmlFor="tracker-field-6">
+                  {labels.totalLabel}
+                </label>
                 <input
+                  id="tracker-field-6"
                   type="number"
                   min={0}
                   placeholder="Desconhecido"
@@ -591,8 +683,11 @@ export default function MediaTracker() {
 
               {!isTipoFilme(tipo) && (
                 <div>
-                  <label className="ui-label">{labels.atualLabel}</label>
+                  <label className="ui-label" htmlFor="tracker-field-7">
+                    {labels.atualLabel}
+                  </label>
                   <input
+                    id="tracker-field-7"
                     type="number"
                     min={0}
                     placeholder="0"
@@ -607,8 +702,11 @@ export default function MediaTracker() {
             <div className="grid gap-4 md:grid-cols-2">
               {!isTipoFilme(tipo) && (
                 <div>
-                  <label className="ui-label">{labels.diaLabel}</label>
+                  <label className="ui-label" htmlFor="tracker-field-8">
+                    {labels.diaLabel}
+                  </label>
                   <select
+                    id="tracker-field-8"
                     className="ui-select"
                     value={diaNovosCapitulos}
                     onChange={(e) => setDiaNovosCapitulos(e.target.value)}
@@ -624,8 +722,11 @@ export default function MediaTracker() {
               )}
 
               <div>
-                <label className="ui-label">Status</label>
+                <label className="ui-label" htmlFor="tracker-field-9">
+                  Status
+                </label>
                 <select
+                  id="tracker-field-9"
                   className="ui-select"
                   value={novoStatus}
                   onChange={(e) => setNovoStatus(e.target.value)}
@@ -638,6 +739,12 @@ export default function MediaTracker() {
                 </select>
               </div>
             </div>
+
+            <EmailReminderToggle
+              checked={notificarLancamentos}
+              onChange={setNotificarLancamentos}
+              disabled={isSaving}
+            />
 
             <div className="grid gap-3 sm:grid-cols-2">
               <button
@@ -670,18 +777,16 @@ export default function MediaTracker() {
         {itemSelecionado && !criandoNovo && (
           <section className="page-surface fade-slide-in space-y-4 p-5 sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-              <img
-                src={normalizeCover(itemSelecionado.coverImage?.medium)}
+              <MediaCover
+                src={normalizeCover(itemSelecionado.coverUrl)}
                 alt={itemSelecionado.title.romaji}
                 className="h-40 w-28 rounded-lg border border-slate-500/35 object-cover"
-                onError={(e) => {
-                  e.currentTarget.onerror = null;
-                  e.currentTarget.src = fallbackCover;
-                }}
               />
 
               <div className="space-y-2">
-                <h2 className="text-xl font-semibold text-slate-50">{itemSelecionado.title.romaji}</h2>
+                <h2 className="text-xl font-semibold text-slate-50">
+                  {itemSelecionado.title.romaji}
+                </h2>
                 <p className="text-sm text-slate-300">
                   {isTipoEpisodio(tipo)
                     ? `Total de episódios: ${itemSelecionado.total ?? "Desconhecido"}`
@@ -695,8 +800,11 @@ export default function MediaTracker() {
             <div className="grid gap-4 md:grid-cols-2">
               {!isTipoFilme(tipo) && (
                 <div>
-                  <label className="ui-label">{labels.atualLabel}</label>
+                  <label className="ui-label" htmlFor="tracker-field-10">
+                    {labels.atualLabel}
+                  </label>
                   <input
+                    id="tracker-field-10"
                     type="number"
                     className="ui-input"
                     value={capituloAtual}
@@ -707,8 +815,11 @@ export default function MediaTracker() {
 
               {!isTipoFilme(tipo) && (
                 <div>
-                  <label className="ui-label">{labels.diaLabel}</label>
+                  <label className="ui-label" htmlFor="tracker-field-11">
+                    {labels.diaLabel}
+                  </label>
                   <select
+                    id="tracker-field-11"
                     className="ui-select"
                     value={diaNovosCapitulos}
                     onChange={(e) => setDiaNovosCapitulos(e.target.value)}
@@ -725,8 +836,11 @@ export default function MediaTracker() {
             </div>
 
             <div>
-              <label className="ui-label">URL para assistir/ler (opcional)</label>
+              <label className="ui-label" htmlFor="tracker-field-12">
+                URL para assistir/ler (opcional)
+              </label>
               <input
+                id="tracker-field-12"
                 type="url"
                 placeholder="https://..."
                 className="ui-input"
@@ -736,8 +850,11 @@ export default function MediaTracker() {
             </div>
 
             <div>
-              <label className="ui-label">Status</label>
+              <label className="ui-label" htmlFor="tracker-field-13">
+                Status
+              </label>
               <select
+                id="tracker-field-13"
                 className="ui-select"
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
@@ -749,6 +866,12 @@ export default function MediaTracker() {
                 ))}
               </select>
             </div>
+
+            <EmailReminderToggle
+              checked={notificarLancamentos}
+              onChange={setNotificarLancamentos}
+              disabled={isSaving}
+            />
 
             <button
               onClick={handleEnviar}

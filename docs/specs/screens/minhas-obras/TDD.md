@@ -1,75 +1,53 @@
-# TDD - Tela Minhas Obras (`/tabeladex`)
+# TDD — Biblioteca em cards
 
-## 1. Arquitetura técnica (atual)
-- UI em `MaterialReactTable` + componentes MUI.
-- Modais separados para edição e confirmação de exclusão.
-- Estratégia de update dual:
-  - `multipart/form-data` quando há upload de arquivo.
-  - JSON quando somente metadados mudam.
+## Organização
 
-## 2. Dependências e relações de arquivo
-## Front-end
-- `Client/financias-react/src/pages/TabelaDex.jsx`
-- `Client/financias-react/src/utils/api.js`
+- `TabelaDex.jsx`: consulta autenticada, filtros, contadores, paginação, cards e coordenação de mutações.
+- `LibraryOrderDialog.jsx`: lista de todas as páginas filtradas, dnd-kit com ponteiro/teclado e botões de posição; salvar/cancelar e tratamento de falha.
+- `MediaEditDialog.jsx`: formulário de edição, validação e preview de upload com revogação de object URLs.
+- `MediaCover.jsx` e `mediaImages.js`: escolha de capa e fallback SVG local; compartilhados com o calendário.
+- `utils/library.js`: funções puras para normalização, filtros, ordenação, paginação, progresso, datas, validação e serialização.
+- `theme.js` e `index.css`: tema MUI global e identidade visual compartilhada.
 
-## Back-end
-- `Presentation/MediaDexController.cs`
-- `Application/Commands/EditMediaCommand.cs`
-- `Application/Validators/EditMediaCommandValidator.cs`
-- `Application/Handlers/Media/EditMediaCommandHandler.cs`
-- `Application/Handlers/Media/MediaDexQueryCommandHandle.cs`
-- `Application/Handlers/Media/MediaDexQueryDeleteCommandHandle.cs`
-- `Repository/MediaRepository.cs`
+## Contratos existentes
 
-## 3. Matriz arquivo -> funcionalidade
-- `Client/financias-react/src/pages/TabelaDex.jsx`: renderiza tabela, abre modais, edita e remove obras.
-- `Client/financias-react/src/utils/api.js`: executa requests autenticadas para MediaDex.
-- `Presentation/MediaDexController.cs`: expõe listagem, edição (JSON/form-data) e exclusão.
-- `Application/Commands/EditMediaCommand.cs`: contrato de entrada para atualização.
-- `Application/Validators/EditMediaCommandValidator.cs`: exige `Nome` na edição.
-- `Application/Handlers/Media/EditMediaCommandHandler.cs`: processa upload de imagem e persistência.
-- `Application/Handlers/Media/MediaDexQueryDeleteCommandHandle.cs`: executa remoção por ID.
-- `Repository/MediaRepository.cs`: operações EF de leitura/atualização/exclusão.
+A organização pessoal adiciona `MediaDex.OrdemPersonalizada` (int nullable) e o endpoint autenticado abaixo. A migration `20261101002519_AddLibraryOrderAndAutoCompletion` também normaliza obras antigas com progresso real igual/superior a total positivo, usando TRY_CONVERT para ignorar valores legados inválidos. O Down remove apenas a coluna de ordem; não desfaz a normalização de status. Consulta por cookie usando a instância `api` com `withCredentials`.
 
-## 4. Contratos técnicos
-- `GET /api/MediaDex/obterMediaPorUsuario`.
-- `PUT /api/MediaDex/{guid}` com `multipart/form-data` ou JSON.
-- `DELETE /api/MediaDex/{guid}`.
+- GET `/api/MediaDex/obterMediaPorUsuario`: biblioteca completa; filtros e paginação no cliente.
+- PUT `/api/MediaDex/{id}`: JSON ou `FormData` com `ImagemUpload` e metadados. Números permanecem strings. Strings vazias limpam campos opcionais; `null` preservaria os valores no handler.
+- Incremento: PUT com somente `nome` obrigatório e `capituloAtual`, sem reenviar metadados/capas.
+- DELETE `/api/MediaDex/{id}`: após confirmação.
+- PUT `/api/MediaDex/ordem`: `{ mediaIds: [guid, ...] }`, retorna `{ ordem: [{ id, ordemPersonalizada }] }`. Autenticação define o proprietário; IDs duplicados, vazios ou de outra conta são rejeitados antes de alterar dados. IDs próprios omitidos (ex.: obras criadas durante o modal) são anexados. Uma única transação EF salva posições.
 
-### Payload form-data (edição com arquivo)
-- `ImagemUpload`
-- `setUrlInput` (fallback para URL)
-- `nome`
-- `totalCapitulos`
-- `capituloAtual`
-- `diaNovoCapitulo`
-- `status`
-- `tipoMidia`
-- `urlMidia`
+URL de capa não vazia tem prioridade sobre `imagemDirectory`. Upload limpa `imagemUrl` e a consulta seguinte obtém o novo nome de arquivo. A remoção física da capa anterior não faz parte deste fluxo.
 
-### Payload JSON (edição sem arquivo)
-- objeto `selectedItem` com `imagemUrl` e `urlMidia` atualizados.
+## Conclusão e ordem
 
-## 5. Sequência técnica resumida
-1. `fetchData` carrega acervo do usuário.
-2. `handleEdit` popular modal.
-3. `handleSave` escolhe estratégia de payload.
-4. Backend monta `EditMediaCommand` (form ou JSON) e persiste via repositório.
-5. `handleConfirmDelete` remove item por ID.
+`MediaCompletionRules.Apply` é executado no repositório antes de criar/atualizar. Total positivo e progresso real atingido resultam em Finalizado; `CapituloEsperadoAtual` não participa. O frontend espelha a regra somente após sucesso e na leitura legada. O +1 continua enviando apenas nome e progresso. Não reabre automaticamente obras finalizadas com progresso posteriormente reduzido.
 
-## 6. Riscos e dívidas técnicas atuais
-- Front envia `Authorization` com token do `localStorage`, mas fluxo atual usa cookie.
-- `DELETE` no backend remove por ID sem validar propriedade do usuário.
-- Campos numéricos permanecem string no domínio.
-- Em upload, campo `setUrlInput` existe por compatibilidade e aumenta acoplamento front/back.
-- Nova acao `Abrir link` depende da qualidade/validade de `urlMidia` persistida.
+`filterLibrary` prioriza ordem salva; sem posição, desempata por título natural e ID. `mergeVisibleOrder` substitui apenas as posições da seleção filtrada na ordem completa, conservando lugares ocultos. O modal usa todas as páginas da seleção. O servidor salva somente a ordem, preservando metadados e preferências de e-mail.
 
-## 7. Casos técnicos de teste recomendados
-- `TC-MO-001`: editar registro usando JSON.
-- `TC-MO-002`: editar registro usando upload de arquivo.
-- `TC-MO-003`: remover registro e validar atualização na tabela.
-- `TC-MO-004`: validar rejeição de edição sem nome (validator back).
-- `TC-MO-005`: validar segurança de exclusão por usuário (teste de autorização).
-- `TC-MO-006`: editar `urlMidia` via JSON.
-- `TC-MO-007`: editar `urlMidia` via multipart.
-- `TC-MO-008`: botão `Abrir link` oculto quando `urlMidia` inexistente.
+## Estado e concorrência
+
+- Uma mutação por vez, com trava síncrona em ref e estado visual de envio. Outros cards bloqueiam ações durante a operação.
+- Respostas antigas de consulta são invalidadas por versão; falhas preservam a coleção já carregada.
+- Incremento e remoção atualizam a coleção local somente após sucesso. Edição aplica dados confirmados e recarrega a coleção para obter a capa enviada.
+- Filtros ficam preservados durante as operações. Paginação é limitada ao intervalo válido quando a quantidade de resultados muda.
+- Dia corrente calculado por `Intl.DateTimeFormat` no fuso `America/Sao_Paulo`, reavaliado por minuto e ao recuperar foco.
+- Rotas mantidas: biblioteca em `/tabeladex`, adição em `/dashboard`; redirecionamentos de entrada apontam para a biblioteca.
+
+## Verificação
+
+Em `Client/financias-react`:
+
+```bash
+npm test
+npm run lint
+npm run build
+```
+
+A suíte `tests/library.test.js` cobre busca normalizada; filtros combinados; ordenação natural e por percentual com desconhecidos ao final; paginação após filtragem/remoção; zero/total desconhecido; limites e conclusão do incremento; ordenação pessoal antes da paginação; mesclagem da seleção filtrada; fronteira UTC/São Paulo; validação e payloads com limpeza explícita.
+
+Conferência de interface com API simulada: paginação, combinação de filtros, clique repetido e falha no incremento, edição JSON, upload multipart, links, fallback local, remoção com falha/nova tentativa, carregamento com falha/nova tentativa, estados vazios, cadastro manual, login e redirecionamentos, perfil e calendário próprio/de terceiros. Conferir desktop, tablet e celular, foco/teclado e ausência de overflow horizontal. Persistência no servidor real deve ser validada em ambiente autenticado de homologação.
+
+Testes relacionais de backend verificam conclusão na criação/atualização, limites/valores desconhecidos, isolamento por usuário, persistência da ordem, obras adicionadas durante a organização e rejeição sem alterações parciais.

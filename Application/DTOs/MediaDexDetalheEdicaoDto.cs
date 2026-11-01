@@ -3,6 +3,8 @@ namespace deskgeek.Application.DTOs
     public class MediaDexDetalheEdicaoDto
     {
         public Guid Id { get; set; }
+        public int? OrdemPersonalizada { get; set; }
+        public bool NotificarLancamentos { get; set; }
         public string Nome { get; set; } = string.Empty;
         public string? TipoMidia { get; set; }
         public string? Status { get; set; }

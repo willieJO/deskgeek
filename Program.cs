@@ -12,6 +12,7 @@ using deskgeek.Shared;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -38,6 +39,12 @@ var allowedCorsOrigins = new[]
     "https://www.mediadex.devporwillie.shop",
     "http://www.mediadex.devporwillie.shop"
 };
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    // Nginx proxies locally; keep the default loopback-only trusted proxies.
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+});
 
 builder.Services.AddCors(options =>
 {
@@ -170,8 +177,9 @@ if (app.Environment.IsEnvironment("E2E"))
     db.Database.Migrate();
 }
 
+app.UseForwardedHeaders();
 app.UseMiddleware<GlobalExceptionMiddleware>();
-app.UseDeveloperExceptionPage();
+if (app.Environment.IsDevelopment()) app.UseDeveloperExceptionPage();
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -197,10 +205,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
-if (app.Environment.IsProduction())
-{
-    app.Urls.Add("http://0.0.0.0:5095");
-}
 
 app.Run();

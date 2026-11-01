@@ -1,3 +1,4 @@
+import MediaCover from "./MediaCover";
 import "./hover-media-preview.css";
 
 export default function HoverMediaPreview({ preview, cardRef }) {
@@ -10,9 +11,15 @@ export default function HoverMediaPreview({ preview, cardRef }) {
         className="hp-hover-preview"
         style={{ left: `${preview.left}px`, top: `${preview.top}px` }}
       >
-        <img src={preview.image} alt={preview.title} className="hp-hover-preview-image" />
+        <MediaCover
+          src={preview.image}
+          alt={preview.title}
+          className="hp-hover-preview-image"
+        />
         <div className="hp-hover-preview-info">
-          {preview.meta ? <p className="hp-hover-preview-meta">{preview.meta}</p> : null}
+          {preview.meta ? (
+            <p className="hp-hover-preview-meta">{preview.meta}</p>
+          ) : null}
           <h3 className="hp-hover-preview-title">{preview.title}</h3>
         </div>
       </article>

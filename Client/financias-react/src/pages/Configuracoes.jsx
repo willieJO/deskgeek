@@ -1,3 +1,4 @@
+import EmailReminderToggle from "../components/EmailReminderToggle";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import ButtonSpinner from "../components/ButtonSpinner";
@@ -23,19 +24,27 @@ function AvatarPreview({ currentUser, localPreviewUrl }) {
       <img
         src={imageSrc}
         alt="Foto de perfil"
-        className="h-24 w-24 rounded-full border border-cyan-300/35 object-cover"
+        className="h-24 w-24 rounded-full border border-violet-300/35 object-cover"
       />
     );
   }
 
   return (
-    <div className="flex h-24 w-24 items-center justify-center rounded-full border border-cyan-300/35 bg-cyan-300/10 text-2xl font-bold text-cyan-100">
+    <div className="flex h-24 w-24 items-center justify-center rounded-full border border-violet-300/35 bg-violet-300/10 text-2xl font-bold text-violet-100">
       {fallbackLetter}
     </div>
   );
 }
 
 export default function Configuracoes({ currentUser, refreshCurrentUser }) {
+  const [receberEmails, setReceberEmails] = useState(
+    currentUser?.receberEmailsLancamentos ?? true,
+  );
+  const [isSavingEmails, setIsSavingEmails] = useState(false);
+  useEffect(() => {
+    setReceberEmails(currentUser?.receberEmailsLancamentos ?? true);
+  }, [currentUser?.receberEmailsLancamentos]);
+
   const [nome, setNome] = useState(currentUser?.usuario || "");
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [isSavingName, setIsSavingName] = useState(false);
@@ -62,6 +71,30 @@ export default function Configuracoes({ currentUser, refreshCurrentUser }) {
       }
     };
   }, [localPreviewUrl]);
+
+  async function handleSaveEmails(event) {
+    event.preventDefault();
+    if (isSavingEmails) return;
+    setIsSavingEmails(true);
+    try {
+      await api.put("/usuario/me/notificacoes", {
+        receberEmailsLancamentos: receberEmails,
+      });
+      await refreshCurrentUser?.();
+      toast.success(
+        receberEmails
+          ? "Lembretes por e-mail ativados."
+          : "Todos os lembretes por e-mail foram pausados.",
+      );
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message ||
+          "Não foi possível salvar a preferência de e-mail.",
+      );
+    } finally {
+      setIsSavingEmails(false);
+    }
+  }
 
   async function handleSaveName(e) {
     e.preventDefault();
@@ -160,37 +193,63 @@ export default function Configuracoes({ currentUser, refreshCurrentUser }) {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-2xl border border-slate-700/40 bg-[rgba(9,18,34,0.75)] p-4 sm:p-6">
+    <div className="profile-page space-y-5">
+      <div className="profile-heading">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200/80">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-200/80">
               Configurações
             </p>
-            <h1 className="mt-1 text-xl font-extrabold text-slate-50">Perfil</h1>
+            <h1 className="section-title">Seu perfil</h1>
             <p className="mt-2 text-sm text-slate-400">
               Atualize foto, nome de usuário e senha de forma independente.
             </p>
           </div>
           <div className="rounded-xl border border-slate-500/30 bg-slate-900/40 px-3 py-2 text-sm text-slate-300">
-            Email: <span className="font-semibold text-slate-100">{currentUser?.email || "-"}</span>
+            Email:{" "}
+            <span className="font-semibold text-slate-100">
+              {currentUser?.email || "-"}
+            </span>
           </div>
         </div>
       </div>
 
+      <form onSubmit={handleSaveEmails} className="profile-panel">
+        <h2 className="text-lg font-bold text-slate-50">
+          Lembretes por e-mail
+        </h2>
+        <p className="mt-1 mb-5 text-sm text-slate-400">
+          Escolha se deseja receber avisos das obras que acompanha em{" "}
+          {currentUser?.email || "seu e-mail"}.
+        </p>
+        <EmailReminderToggle
+          checked={receberEmails}
+          onChange={setReceberEmails}
+          disabled={isSavingEmails}
+          label="Receber lembretes de lançamentos"
+          description="Avisos às 12h de Brasília, conforme o dia cadastrado em cada obra. Ao pausar, nenhum lembrete será enviado; suas escolhas por obra ficam salvas."
+        />
+        <div className="mt-4 flex justify-end">
+          <button type="submit" className="ui-button" disabled={isSavingEmails}>
+            {isSavingEmails && <ButtonSpinner />}
+            {isSavingEmails ? "Salvando..." : "Salvar preferência de e-mail"}
+          </button>
+        </div>
+      </form>
+
       <div className="grid gap-5 xl:grid-cols-2">
-        <form
-          onSubmit={handleSavePhoto}
-          className="rounded-2xl border border-slate-700/40 bg-[rgba(9,18,34,0.75)] p-4 sm:p-6"
-        >
+        <form onSubmit={handleSavePhoto} className="profile-panel">
           <h2 className="text-lg font-bold text-slate-50">Foto de perfil</h2>
           <p className="mt-1 text-sm text-slate-400">
             Formatos permitidos: JPG, PNG, WEBP. Tamanho máximo: 2MB.
           </p>
 
           <div className="mt-4 flex flex-wrap items-center gap-4">
-            <AvatarPreview currentUser={currentUser} localPreviewUrl={localPreviewUrl} />
-            <div className="flex-1 min-w-[220px]">
+            <AvatarPreview
+              currentUser={currentUser}
+              localPreviewUrl={localPreviewUrl}
+            />
+            <div className="flex-1 min-w-0">
               <label className="ui-label" htmlFor="foto-perfil">
                 Selecionar foto
               </label>
@@ -199,13 +258,17 @@ export default function Configuracoes({ currentUser, refreshCurrentUser }) {
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={(e) => setSelectedPhoto(e.target.files?.[0] || null)}
-                className="ui-input file:mr-3 file:rounded-lg file:border-0 file:bg-cyan-300/15 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-cyan-100"
+                className="ui-input file:mr-3 file:rounded-lg file:border-0 file:bg-violet-300/15 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-violet-100"
               />
             </div>
           </div>
 
           <div className="mt-4 flex justify-end">
-            <button type="submit" className="ui-button" disabled={isSavingPhoto}>
+            <button
+              type="submit"
+              className="ui-button"
+              disabled={isSavingPhoto}
+            >
               {isSavingPhoto ? (
                 <>
                   <ButtonSpinner />
@@ -218,12 +281,11 @@ export default function Configuracoes({ currentUser, refreshCurrentUser }) {
           </div>
         </form>
 
-        <form
-          onSubmit={handleSaveName}
-          className="rounded-2xl border border-slate-700/40 bg-[rgba(9,18,34,0.75)] p-4 sm:p-6"
-        >
+        <form onSubmit={handleSaveName} className="profile-panel">
           <h2 className="text-lg font-bold text-slate-50">Nome de usuário</h2>
-          <p className="mt-1 text-sm text-slate-400">Esse nome é usado nas buscas de usuário e exibição no app.</p>
+          <p className="mt-1 text-sm text-slate-400">
+            Esse nome é usado nas buscas de usuário e exibição no app.
+          </p>
 
           <div className="mt-4">
             <label className="ui-label" htmlFor="perfil-usuario">
@@ -255,12 +317,11 @@ export default function Configuracoes({ currentUser, refreshCurrentUser }) {
         </form>
       </div>
 
-      <form
-        onSubmit={handleSavePassword}
-        className="rounded-2xl border border-slate-700/40 bg-[rgba(9,18,34,0.75)] p-4 sm:p-6"
-      >
+      <form onSubmit={handleSavePassword} className="profile-panel">
         <h2 className="text-lg font-bold text-slate-50">Senha</h2>
-        <p className="mt-1 text-sm text-slate-400">Informe sua senha atual para confirmar a alteração.</p>
+        <p className="mt-1 text-sm text-slate-400">
+          Informe sua senha atual para confirmar a alteração.
+        </p>
 
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <div>
@@ -308,7 +369,11 @@ export default function Configuracoes({ currentUser, refreshCurrentUser }) {
         </div>
 
         <div className="mt-4 flex justify-end">
-          <button type="submit" className="ui-button" disabled={isSavingPassword}>
+          <button
+            type="submit"
+            className="ui-button"
+            disabled={isSavingPassword}
+          >
             {isSavingPassword ? (
               <>
                 <ButtonSpinner />

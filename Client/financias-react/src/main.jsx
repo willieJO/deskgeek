@@ -1,4 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from "react";
+import { ThemeProvider } from "@mui/material/styles";
+import theme from "./theme";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
@@ -14,7 +16,7 @@ const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
 const TabelaDex = lazy(() =>
-  import("./pages/TabelaDex").then((module) => ({ default: module.TabelaDex }))
+  import("./pages/TabelaDex").then((module) => ({ default: module.TabelaDex })),
 );
 
 function RouteLoading() {
@@ -24,7 +26,7 @@ function RouteLoading() {
         <p className="section-tag mx-auto">MediaDex</p>
         <h1 className="section-title text-2xl">Carregando página</h1>
         <p className="section-subtitle mt-3">Preparando componentes...</p>
-        <div className="mt-6 flex justify-center text-cyan-200">
+        <div className="mt-6 flex justify-center text-violet-200">
           <ButtonSpinner className="ui-inline-spinner-lg" />
         </div>
       </div>
@@ -49,6 +51,7 @@ function App() {
           id: res.data.id,
           email: res.data.email,
           usuario: res.data.usuario || "",
+          receberEmailsLancamentos: res.data.receberEmailsLancamentos ?? true,
           fotoPerfilDisponivel: Boolean(res.data.fotoPerfilDisponivel),
           fotoCacheKey: Date.now(),
         };
@@ -92,7 +95,7 @@ function App() {
           <p className="section-tag mx-auto">MediaDex</p>
           <h1 className="section-title text-2xl">Preparando sua sessão</h1>
           <p className="section-subtitle mt-3">Verificando autenticação...</p>
-          <div className="mt-6 flex justify-center text-cyan-200">
+          <div className="mt-6 flex justify-center text-violet-200">
             <ButtonSpinner className="ui-inline-spinner-lg" />
           </div>
         </div>
@@ -110,9 +113,9 @@ function App() {
         closeOnClick
         pauseOnHover
         toastStyle={{
-          background: "rgba(6, 14, 28, 0.95)",
-          color: "#e5f3ff",
-          border: "1px solid rgba(148, 163, 184, 0.35)",
+          background: "#211e2b",
+          color: "#f4f3f7",
+          border: "1px solid #a78bfa25",
           borderRadius: "12px",
         }}
       />
@@ -120,14 +123,16 @@ function App() {
       <Routes>
         <Route
           path="/"
-          element={isLoggedIn ? <Navigate to="/dashboard" /> : <Navigate to="/login" />}
+          element={
+            isLoggedIn ? <Navigate to="/tabeladex" /> : <Navigate to="/login" />
+          }
         />
 
         <Route
           path="/login"
           element={
             isLoggedIn ? (
-              <Navigate to="/dashboard" />
+              <Navigate to="/tabeladex" />
             ) : (
               <LazyRoute>
                 <Login onLogin={refreshCurrentUser} />
@@ -140,7 +145,7 @@ function App() {
           path="/register"
           element={
             isLoggedIn ? (
-              <Navigate to="/dashboard" />
+              <Navigate to="/tabeladex" />
             ) : (
               <LazyRoute>
                 <Register />
@@ -177,7 +182,7 @@ function App() {
             path="tabeladex"
             element={
               <LazyRoute>
-                <TabelaDex />
+                <TabelaDex currentUser={currentUser} />
               </LazyRoute>
             }
           />
@@ -193,7 +198,10 @@ function App() {
             path="configuracoes"
             element={
               <LazyRoute>
-                <Configuracoes currentUser={currentUser} refreshCurrentUser={refreshCurrentUser} />
+                <Configuracoes
+                  currentUser={currentUser}
+                  refreshCurrentUser={refreshCurrentUser}
+                />
               </LazyRoute>
             }
           />
@@ -203,4 +211,8 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <ThemeProvider theme={theme}>
+    <App />
+  </ThemeProvider>,
+);

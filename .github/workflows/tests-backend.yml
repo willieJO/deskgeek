@@ -24,6 +24,9 @@ jobs:
       - name: Restore
         run: dotnet restore desksaveanime.sln
 
+      - name: Build email worker
+        run: dotnet build Worker/MediaDex.Worker/MediaDex.Worker.csproj --configuration Release --no-restore
+
       - name: Run backend test suite
         run: dotnet test tests/deskgeek.Backend.Tests/deskgeek.Backend.Tests.csproj --configuration Release --logger "trx;LogFileName=backend-tests.trx"
 

@@ -36,3 +36,8 @@ Tela privada para gerenciamento de perfil do usuário autenticado.
 - `AC-CONF-003`: erro na troca de senha exibe mensagem e mantém formulário.
 - `AC-CONF-004`: foto válida atualiza avatar exibido na área logada.
 - `AC-CONF-005`: erro em um bloco não impede salvar outro bloco.
+
+
+## Lembretes por e-mail
+
+Seção independente para `receberEmailsLancamentos`, carregada na sessão via `GET /api/usuario/me` e atualizada em `PUT /api/usuario/me/notificacoes`. Salvar atualiza a sessão sem reload. Desligar pausa todas as obras; reativar preserva seleções individuais. Preferências por obra ficam nos cards e nos formulários de criação/edição. Falhas mantêm a escolha no formulário para nova tentativa.

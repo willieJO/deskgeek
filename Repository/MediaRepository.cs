@@ -1,4 +1,4 @@
-﻿using deskgeek.Application.Queries;
+using deskgeek.Application.Queries;
 using deskgeek.Domain;
 using deskgeek.Infra;
 using deskgeek.Shared;
@@ -28,6 +28,7 @@ namespace deskgeek.Repository
         }
         public async Task AddAsync(MediaDex usuario)
         {
+            MediaCompletionRules.Apply(usuario);
             await _context.MediaDex.AddAsync(usuario);
             await _context.SaveChangesAsync();
         }
@@ -40,7 +41,10 @@ namespace deskgeek.Repository
         }
         public async Task UpdateAsync(MediaDex usuario)
         {
+            MediaCompletionRules.Apply(usuario);
             _context.MediaDex.Update(usuario);
+            // Position is owned by the ordering command; progress/metadata edits must not overwrite it.
+            _context.Entry(usuario).Property(x => x.OrdemPersonalizada).IsModified = false;
             await _context.SaveChangesAsync();
         }
         public async Task<bool> DeleteAsync(Guid id)

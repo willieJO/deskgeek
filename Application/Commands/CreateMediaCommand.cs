@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace deskgeek.Application.Commands
@@ -11,6 +11,7 @@ namespace deskgeek.Application.Commands
         public string? TotalCapitulos { get; set; }
         public string? CapituloAtual { get; set; }
         public string? Status { get; set; }
+        public bool NotificarLancamentos { get; set; } = true;
         public string? TipoMidia { get; set; }
         public string? DiaNovoCapitulo { get; set; }
         public IFormFile? ImagemUpload { get; set; }

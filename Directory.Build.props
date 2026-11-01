@@ -1,0 +1,10 @@
+<Project>
+  <!-- Windows/Visual Studio keeps its normal bin/obj paths. WSL must never overwrite them. -->
+  <PropertyGroup Condition="'$(OS)' != 'Windows_NT'">
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPath Condition="'$(ArtifactsPath)' == ''">$(MSBuildThisFileDirectory)artifacts/linux</ArtifactsPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);$(MSBuildThisFileDirectory)artifacts/**;**/bin/**;**/obj/**</DefaultItemExcludes>
+  </PropertyGroup>
+</Project>

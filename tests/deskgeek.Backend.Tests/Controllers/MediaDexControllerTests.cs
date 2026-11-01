@@ -1,4 +1,6 @@
 using deskgeek.Application.Queries;
+using deskgeek.Application.Commands;
+using FluentValidation;
 using deskgeek.Application.Services;
 using deskgeek.Domain;
 using deskgeek.Presentation;
@@ -15,6 +17,31 @@ namespace deskgeek.Backend.Tests.Controllers;
 
 public class MediaDexControllerTests
 {
+    [Fact]
+    public async Task SalvarOrdem_UsesAuthenticatedAccountInsteadOfBody()
+    {
+        var userId = Guid.NewGuid();
+        var command = new SaveLibraryOrderCommand { UserId = Guid.NewGuid(), MediaIds = [Guid.NewGuid()] };
+        var mediator = new Mock<IMediator>();
+        mediator.Setup(x => x.Send(It.Is<SaveLibraryOrderCommand>(x => x.UserId == userId), It.IsAny<CancellationToken>())).ReturnsAsync(new List<LibraryOrderItem>());
+        var controller = BuildController(mediator.Object);
+        controller.ControllerContext = new ControllerContext { HttpContext = BuildHttpContextWithUser(userId) };
+        Assert.IsType<OkObjectResult>(await controller.SalvarOrdem(command));
+        Assert.Equal(userId, command.UserId);
+        mediator.VerifyAll();
+    }
+
+    [Fact]
+    public async Task SalvarOrdem_ValidationMessageWithoutFailuresReturnsBadRequest()
+    {
+        var mediator = new Mock<IMediator>();
+        mediator.Setup(x => x.Send(It.IsAny<SaveLibraryOrderCommand>(), It.IsAny<CancellationToken>())).ThrowsAsync(new ValidationException("Biblioteca inválida."));
+        var controller = BuildController(mediator.Object);
+        controller.ControllerContext = new ControllerContext { HttpContext = BuildHttpContextWithUser() };
+        var result = Assert.IsType<BadRequestObjectResult>(await controller.SalvarOrdem(new SaveLibraryOrderCommand()));
+        Assert.Equal("Biblioteca inválida.", result.Value!.GetType().GetProperty("message")!.GetValue(result.Value));
+    }
+
     [Fact]
     public async Task ObterMediaDetalhePorId_ShouldReturnOk_WhenMediaBelongsToAuthenticatedUser()
     {
@@ -144,6 +171,27 @@ public class MediaDexControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result);
         var payload = Assert.IsAssignableFrom<IEnumerable<object>>(okResult.Value);
         Assert.Empty(payload);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task EditMultipart_DistinguishesMissingImageUrlFromExplicitClearing(bool provided)
+    {
+        var mediator = new Mock<IMediator>();
+        deskgeek.Application.Commands.EditMediaCommand? captured = null;
+        mediator.Setup(x => x.Send(It.IsAny<deskgeek.Application.Commands.EditMediaCommand>(), It.IsAny<CancellationToken>()))
+            .Callback<IRequest<Guid?>, CancellationToken>((command, _) => captured = (deskgeek.Application.Commands.EditMediaCommand)command)
+            .ReturnsAsync(Guid.NewGuid());
+        var controller = BuildController(mediator.Object);
+        controller.ControllerContext = new ControllerContext { HttpContext = BuildHttpContextWithUser() };
+        controller.Request.ContentType = "multipart/form-data";
+        var fields = new Dictionary<string, Microsoft.Extensions.Primitives.StringValues> { ["nome"] = "Capa de teste" };
+        if (provided) fields["imagemUrl"] = "";
+        controller.Request.Form = new FormCollection(fields);
+        Assert.IsType<OkObjectResult>(await controller.EditarMedia(Guid.NewGuid()));
+        Assert.NotNull(captured);
+        Assert.Equal(provided ? "" : null, captured.imagemUrl);
     }
 
     private static MediaDexController BuildController(IMediator mediator)

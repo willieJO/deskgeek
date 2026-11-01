@@ -76,7 +76,7 @@ Retorna lista otimizada de usuários filtrados por prefixo, com campos `id`, `us
 ## MediaDex
 ### GET `/api/MediaDex/obterMediaPorUsuario` (Authorize)
 Retorna lista de `MediaDex` do usuario logado.
-Inclui campo opcional `urlMidia` (URL pessoal para assistir/ler).
+Inclui campo opcional `urlMidia` (URL pessoal para assistir/ler) e `ordemPersonalizada` (int nullable, posição na biblioteca do proprietário).
 Inclui campo calculado `capituloEsperadoAtual` (inteiro) para consistencia de progressao esperada.
 
 ### GET `/api/MediaDex/{id}` (Authorize)
@@ -148,3 +148,21 @@ Proxy de capa MangaDex.
 ## Observacao de privacidade (MediaDex)
 - O campo `urlMidia` e retornado apenas em `GET /api/MediaDex/obterMediaPorUsuario` (dono da conta).
 - Endpoints de calendario (`obterMediaPorUsuarioPorStatusEmAndamento*`) usam contrato reduzido e nao retornam `urlMidia`.
+
+
+## Preferências de lembretes por e-mail
+
+- `GET /api/usuario/me` inclui `receberEmailsLancamentos` (boolean).
+- `PUT /api/usuario/me/notificacoes`: corpo `{ "receberEmailsLancamentos": false }`; exige valor booleano explícito e atualiza somente o usuário da sessão.
+- `PUT /api/MediaDex/{id}/notificacoes`: corpo `{ "notificarLancamentos": false }`; retorna 404 para obra inexistente/de outro usuário.
+- Consulta privada e detalhe de obra incluem `notificarLancamentos`. Criação aceita boolean (padrão `true`); edição preserva a preferência quando ausente. Multipart aceita texto `true`/`false`.
+- Calendários públicos/de terceiros não incluem preferências nem links pessoais.
+
+Fluxo assíncrono, requisitos de banco/worker e configurações: [guia de e-mails](../../email/README.md).
+
+
+### PUT `/api/MediaDex/ordem` (Authorize)
+
+Corpo `{ "mediaIds": ["guid", "guid"] }`. A conta vem do cookie, ignorando eventual UserId enviado. Resposta 200: `{ "ordem": [{ "id": "guid", "ordemPersonalizada": 0 }] }`. Salva posições em uma transação e preserva outros campos. Obras próprias omitidas são anexadas à seleção. IDs repetidos, vazios, inexistentes ou de outra conta retornam 400, sem alteração parcial. Conflito de exclusão concorrente retorna 409; permite atualizar a lista e tentar novamente.
+
+Criação/edição de mídia conclui automaticamente (`status = "Finalizado"`) quando o progresso real atinge total positivo conhecido. O total esperado de lançamentos não causa conclusão; totais desconhecidos/zero não concluem.

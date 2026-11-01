@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "deskgeek", "deskgeek.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "deskgeek.Backend.Tests", "tests\deskgeek.Backend.Tests\deskgeek.Backend.Tests.csproj", "{DC952B4E-0AC7-4A97-B8C2-8E5B218A8B00}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Worker", "Worker", "{850BBE6C-2DAB-4CFE-821B-32DECF1C590C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaDex.Worker", "Worker\MediaDex.Worker\MediaDex.Worker.csproj", "{6A883F36-6DC4-4ABE-95FF-B1582847C0B7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,11 +25,18 @@ Global
 		{DC952B4E-0AC7-4A97-B8C2-8E5B218A8B00}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DC952B4E-0AC7-4A97-B8C2-8E5B218A8B00}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DC952B4E-0AC7-4A97-B8C2-8E5B218A8B00}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A883F36-6DC4-4ABE-95FF-B1582847C0B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A883F36-6DC4-4ABE-95FF-B1582847C0B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A883F36-6DC4-4ABE-95FF-B1582847C0B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A883F36-6DC4-4ABE-95FF-B1582847C0B7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {05C564E0-B3E9-4C5D-8452-D250420BD216}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{6A883F36-6DC4-4ABE-95FF-B1582847C0B7} = {850BBE6C-2DAB-4CFE-821B-32DECF1C590C}
 	EndGlobalSection
 EndGlobal

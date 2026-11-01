@@ -36,6 +36,8 @@ namespace deskgeek.Application.Handlers.Media
 
             var capituloEsperadoAnterior = _mediaProgressionService.CalcularCapituloEsperadoAtual(mediaExistente);
 
+            if (request.NotificarLancamentos.HasValue) mediaExistente.NotificarLancamentos = request.NotificarLancamentos.Value;
+
             mediaExistente.Nome = NormalizeOptionalString(request.Nome) ?? mediaExistente.Nome;
 
             if (request.TipoMidia != null)
@@ -84,6 +86,7 @@ namespace deskgeek.Application.Handlers.Media
 
                 var savedFileName = await _uploadService.UploadImageToServer(imageBytes, request.ImagemUpload.FileName);
                 mediaExistente.ImagemDirectory = savedFileName;
+                mediaExistente.imagemUrl = null;
             }
             else if (!string.IsNullOrWhiteSpace(request.ImagemDirectory))
             {

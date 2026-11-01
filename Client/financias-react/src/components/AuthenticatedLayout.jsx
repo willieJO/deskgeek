@@ -1,91 +1,73 @@
 import { useState } from "react";
-import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+import { Drawer } from "@mui/material";
 import {
-  HiBars3,
-  HiOutlineArrowLeftOnRectangle,
-  HiOutlineBookOpen,
-  HiOutlineCalendarDays,
-  HiOutlineChevronDoubleLeft,
-  HiOutlineCog6Tooth,
-  HiOutlineHomeModern,
-} from "react-icons/hi2";
+  Outlet,
+  Link,
+  NavLink,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Library,
+  LogOut,
+  Menu,
+  Plus,
+  Settings2,
+  Sparkles,
+  X,
+} from "lucide-react";
 import ButtonSpinner from "./ButtonSpinner";
+import Brand from "./Brand";
 import api from "../utils/api";
 
 const menuItems = [
-  {
-    label: "Acompanhar mídia",
-    icon: <HiOutlineHomeModern size={20} />,
-    path: "/dashboard",
-  },
-  {
-    label: "Minhas obras",
-    icon: <HiOutlineBookOpen size={20} />,
-    path: "/tabeladex",
-  },
-  {
-    label: "Calendário",
-    icon: <HiOutlineCalendarDays size={20} />,
-    path: "/calendariodex",
-  },
-  {
-    label: "Configurações",
-    icon: <HiOutlineCog6Tooth size={20} />,
-    path: "/configuracoes",
-  },
+  { label: "Minhas obras", icon: Library, path: "/tabeladex" },
+  { label: "Calendário", icon: CalendarDays, path: "/calendariodex" },
+  { label: "Configurações", icon: Settings2, path: "/configuracoes" },
 ];
 
-function UserAvatar({ currentUser, compact = false }) {
+function UserAvatar({ currentUser }) {
+  const [failedPhoto, setFailedPhoto] = useState(null);
   const initials = (currentUser?.usuario || currentUser?.email || "U")
     .trim()
     .slice(0, 1)
     .toUpperCase();
-
-  const fotoUrl =
+  const photo =
     currentUser?.fotoPerfilDisponivel && currentUser?.fotoCacheKey
       ? `${api.getUri({ url: "/usuario/me/foto" })}?v=${currentUser.fotoCacheKey}`
       : null;
-
-  const sizeClass = compact ? "h-10 w-10" : "h-12 w-12";
-
-  if (fotoUrl) {
-    return (
-      <img
-        src={fotoUrl}
-        alt="Foto de perfil"
-        className={`${sizeClass} rounded-full border border-cyan-300/35 object-cover`}
-      />
-    );
-  }
-
-  return (
-    <div
-      className={`${sizeClass} flex items-center justify-center rounded-full border border-cyan-300/35 bg-cyan-300/10 text-sm font-bold text-cyan-100`}
-      aria-label="Avatar padrão"
-    >
-      {initials}
-    </div>
+  return photo && failedPhoto !== photo ? (
+    <img
+      src={photo}
+      alt=""
+      className="user-avatar"
+      onError={() => setFailedPhoto(photo)}
+    />
+  ) : (
+    <span className="user-avatar">{initials}</span>
   );
 }
 
 export default function AuthenticatedLayout({ onLogout, currentUser }) {
-  const [sidebarExpanded, setSidebarExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-
   const currentPage =
-    menuItems.find((item) => location.pathname.startsWith(item.path))?.label || "Painel";
+    menuItems.find((item) => location.pathname === item.path)?.label ||
+    "Adicionar obra";
 
   async function handleLogout() {
-    if (isLoggingOut) return;
-    setIsLoggingOut(true);
-
+    if (loggingOut) return;
+    setLoggingOut(true);
     try {
       await api.post("/usuario/logout");
     } catch {
-      // Mesmo com erro no backend, usuário já foi deslogado localmente.
+      /* Clear local session even if the server is unavailable. */
     } finally {
       localStorage.removeItem("token");
       setMobileOpen(false);
@@ -94,130 +76,165 @@ export default function AuthenticatedLayout({ onLogout, currentUser }) {
     }
   }
 
-  return (
-    <div className="app-shell text-slate-100">
-      <div
-        onClick={() => setMobileOpen(false)}
-        className={`fixed inset-0 z-30 bg-slate-950/70 transition lg:hidden ${
-          mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
-      />
-
-      <aside
-        className={`fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-slate-600/35 bg-[rgba(9,18,34,0.98)] px-3 py-5 shadow-2xl transition-transform duration-300 ${
-          sidebarExpanded ? "lg:w-72" : "lg:w-24"
-        } ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
-      >
-        <div
-          className={`mb-5 flex items-center ${
-            sidebarExpanded ? "justify-between px-2" : "justify-center"
-          }`}
-        >
-          {sidebarExpanded ? (
-            <div>
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-cyan-200/85">
-                MediaDex
-              </p>
-              <h1 className="text-xl font-extrabold text-slate-50">Painel</h1>
-            </div>
-          ) : (
-            <p className="text-xl font-extrabold text-cyan-200">M</p>
-          )}
-
-          <button
-            onClick={() => setSidebarExpanded((value) => !value)}
-            className="ui-icon-button hidden rounded-xl border-slate-500/40 bg-slate-900/75 p-2 text-slate-300 lg:block"
-            aria-label="Expandir menu"
+  function sidebar(mobile = false) {
+    const showLabels = mobile || expanded;
+    return (
+      <div className={`sidebar-content ${showLabels ? "" : "compact"}`}>
+        <div className="sidebar-brand">
+          <Link
+            to="/tabeladex"
+            aria-label="MediaDex, minhas obras"
+            onClick={() => setMobileOpen(false)}
           >
-            <HiOutlineChevronDoubleLeft
-              size={20}
-              className={`transition-transform ${sidebarExpanded ? "" : "rotate-180"}`}
-            />
-          </button>
+            <Brand compact={!showLabels} />
+          </Link>
+          {mobile && (
+            <button
+              className="ui-icon-button"
+              aria-label="Fechar menu"
+              onClick={() => setMobileOpen(false)}
+            >
+              <X size={20} />
+            </button>
+          )}
         </div>
-
-        <div
-          className={`mb-5 rounded-2xl border border-slate-500/30 bg-slate-900/35 p-3 ${
-            sidebarExpanded ? "" : "px-2"
-          }`}
-        >
-          <div className={`flex items-center ${sidebarExpanded ? "gap-3" : "justify-center"}`}>
-            <UserAvatar currentUser={currentUser} compact={!sidebarExpanded} />
-            {sidebarExpanded && (
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-slate-100">
-                  {currentUser?.usuario || "Usuário"}
-                </p>
-                <p className="truncate text-xs text-slate-400">{currentUser?.email || ""}</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <nav className="flex-1 space-y-1">
-          {menuItems.map(({ label, icon, path }) => {
-            const isActive = location.pathname === path;
+        {showLabels && <p className="nav-caption">Seu espaço</p>}
+        <nav className="sidebar-nav" aria-label="Navegação principal">
+          {menuItems.map((item) => {
+            const { label, path } = item;
+            const Icon = item.icon;
             return (
-              <Link
+              <NavLink
                 key={path}
                 to={path}
                 onClick={() => setMobileOpen(false)}
-                className={`group flex items-center rounded-xl border px-3 py-3 text-sm font-semibold transition ${
-                  isActive
-                    ? "border-cyan-300/45 bg-cyan-300/15 text-cyan-100"
-                    : "border-transparent text-slate-300 hover:border-slate-500/45 hover:bg-slate-700/30 hover:text-slate-50"
-                } ${sidebarExpanded ? "gap-3" : "justify-center"}`}
+                aria-label={label}
+                title={!showLabels ? label : undefined}
+                className={({ isActive }) =>
+                  `nav-item ${isActive ? "active" : ""}`
+                }
               >
-                {icon}
-                {sidebarExpanded && <span>{label}</span>}
-              </Link>
+                <Icon size={20} />
+                {showLabels && <span>{label}</span>}
+                {showLabels && (
+                  <ChevronRight size={14} className="nav-chevron" />
+                )}
+              </NavLink>
             );
           })}
         </nav>
-
-        <button
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-          className={`mt-4 flex items-center rounded-xl border border-rose-300/35 bg-rose-300/10 px-3 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-300/20 ${
-            sidebarExpanded ? "gap-3" : "justify-center"
-          }`}
-          type="button"
+        <Link
+          to="/dashboard"
+          className="ui-button sidebar-add"
+          onClick={() => setMobileOpen(false)}
+          aria-label="Adicionar obra"
+          title={!showLabels ? "Adicionar obra" : undefined}
         >
-          {isLoggingOut ? <ButtonSpinner /> : <HiOutlineArrowLeftOnRectangle size={20} />}
-          {sidebarExpanded && <span>{isLoggingOut ? "Saindo..." : "Sair"}</span>}
+          <Plus size={20} />
+          {showLabels && "Adicionar obra"}
+        </Link>
+        {showLabels && (
+          <div className="sidebar-note">
+            <span>
+              <Sparkles size={19} />
+            </span>
+            <p>
+              Seu próximo capítulo<strong>começa por aqui.</strong>
+            </p>
+            <small>
+              Organize suas histórias favoritas e aproveite cada uma no seu
+              ritmo.
+            </small>
+          </div>
+        )}
+        <div className="sidebar-bottom">
+          <Link
+            to="/configuracoes"
+            className="sidebar-profile"
+            aria-label="Meu perfil"
+            onClick={() => setMobileOpen(false)}
+          >
+            <UserAvatar currentUser={currentUser} />
+            {showLabels && (
+              <span>
+                <strong>{currentUser?.usuario || "Meu perfil"}</strong>
+                <small>{currentUser?.email}</small>
+              </span>
+            )}
+          </Link>
+          <button
+            className="logout-button"
+            onClick={handleLogout}
+            disabled={loggingOut}
+            aria-label="Sair da conta"
+          >
+            {loggingOut ? <ButtonSpinner /> : <LogOut size={18} />}
+            {showLabels && (
+              <span>{loggingOut ? "Saindo..." : "Sair da conta"}</span>
+            )}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`app-shell ${expanded ? "" : "sidebar-collapsed"}`}>
+      <a className="skip-link" href="#page-content">
+        Ir para conteúdo
+      </a>
+      <aside className="desktop-sidebar">
+        {sidebar()}
+        <button
+          className="sidebar-collapse ui-icon-button"
+          onClick={() => setExpanded((value) => !value)}
+          aria-label={expanded ? "Recolher menu" : "Expandir menu"}
+          aria-expanded={expanded}
+        >
+          {expanded ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
         </button>
       </aside>
-
-      <main className={`min-h-screen ${sidebarExpanded ? "lg:ml-72" : "lg:ml-24"}`}>
-        <header className="sticky top-0 z-20 border-b border-slate-700/35 bg-[rgba(8,14,27,0.96)] px-4 py-3 sm:px-6">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setMobileOpen((value) => !value)}
-                className="ui-icon-button rounded-xl border-slate-500/40 bg-slate-900/80 p-2 text-slate-300 lg:hidden"
-                aria-label="Abrir menu"
-              >
-                <HiBars3 size={20} />
-              </button>
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Navegação</p>
-                <p className="text-sm font-semibold text-slate-100 sm:text-base">{currentPage}</p>
-              </div>
-            </div>
-
-            <div className="hidden items-center gap-2 sm:flex">
-              <div className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100">
-                Organize, acompanhe e finalize.
-              </div>
-              <UserAvatar currentUser={currentUser} compact />
-            </div>
+      <Drawer
+        open={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        slotProps={{
+          paper: {
+            className: "mobile-sidebar",
+            sx: { width: 280, maxWidth: "90vw" },
+          },
+        }}
+      >
+        {sidebar(true)}
+      </Drawer>
+      <div className="app-main">
+        <header className="app-header">
+          <div className="header-breadcrumb">
+            <button
+              className="mobile-menu-button ui-icon-button"
+              aria-label="Abrir menu"
+              aria-expanded={mobileOpen}
+              onClick={() => setMobileOpen(true)}
+            >
+              <Menu size={22} />
+            </button>
+            <span className="header-brand-label">Meu espaço</span>
+            <ChevronRight size={14} />
+            <strong>{currentPage}</strong>
+          </div>
+          <div className="header-profile">
+            <span>{currentUser?.usuario || "Seu universo de histórias"}</span>
+            <Link to="/configuracoes" aria-label="Abrir meu perfil">
+              <UserAvatar currentUser={currentUser} />
+            </Link>
           </div>
         </header>
-
-        <section className="px-4 py-5 sm:px-6 sm:py-7">
+        <main id="page-content" className="page-content" tabIndex={-1}>
           <Outlet />
-        </section>
-      </main>
+        </main>
+        <footer className="app-footer">
+          <span>MediaDex</span> Uma história de cada vez.
+        </footer>
+      </div>
     </div>
   );
 }

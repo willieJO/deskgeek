@@ -62,3 +62,8 @@ Tela pública para autenticar usuário e liberar acesso às rotas protegidas.
 ## 8. Referências front/back
 - Front: `Client/financias-react/src/pages/Login.jsx`, `Client/financias-react/src/main.jsx`
 - Back: `Presentation/UsuarioController.cs`, `Application/Validators/LoginQuerieValidator.cs`
+
+
+## Confirmação da sessão e falhas de perfil
+
+Depois de `POST /api/usuario/login` aceito, o frontend confirma a sessão em `GET /api/usuario/me` antes de abrir `/tabeladex`. Se o perfil não puder ser carregado, permanece no login e explica que as credenciais foram aceitas, mas o perfil está indisponível; não anuncia sucesso nem inicia um ciclo de redirecionamentos. Erros de credenciais continuam mostrando a resposta do login. Após atualizar o modelo do banco, as migrations devem estar aplicadas antes de iniciar a API.

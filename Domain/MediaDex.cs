@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace deskgeek.Domain
@@ -8,12 +8,14 @@ namespace deskgeek.Domain
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid();
         public Guid UserId { get; set; }
+        public int? OrdemPersonalizada { get; set; }
         public string Nome { get; set; }    
         public string? TotalCapitulos { get; set; }
         public string? CapituloAtual { get; set; }
         public int? CapituloEsperadoBase { get; set; }
         public DateTimeOffset? CapituloEsperadoReferenciaUtc { get; set; }
         public string? Status { get; set; }
+        public bool NotificarLancamentos { get; set; } = true;
         public string? TipoMidia { get; set; }
         public string? DiaNovoCapitulo { get; set; }
         [NotMapped]

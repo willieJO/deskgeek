@@ -1,4 +1,4 @@
-﻿using deskgeek.Application.Commands;
+using deskgeek.Application.Commands;
 using deskgeek.Application.Queries;
 using deskgeek.Domain;
 using deskgeek.Shared;
@@ -71,8 +71,25 @@ namespace deskgeek.Presentation
                 id = usuario.Id,
                 email = usuario.Email,
                 usuario = usuario.Usuario,
+                receberEmailsLancamentos = usuario.ReceberEmailsLancamentos,
                 fotoPerfilDisponivel = !string.IsNullOrWhiteSpace(usuario.FotoPerfilArquivo)
             });
+        }
+
+        [Authorize]
+        [HttpPut("me/notificacoes")]
+        public async Task<IActionResult> AtualizarMeusEmails([FromBody] UpdateUsuarioEmailsCommand command)
+        {
+            var userId = GetAuthenticatedUserId();
+            if (userId is null) return Unauthorized();
+            command.Id = userId.Value;
+            try
+            {
+                var enabled = await _mediator.Send(command);
+                return Ok(new { success = true, receberEmailsLancamentos = enabled });
+            }
+            catch (ValidationException exception) { return BadRequest(new { message = exception.Errors.First().ErrorMessage }); }
+            catch (KeyNotFoundException) { return NotFound(new { message = "Usuário não encontrado." }); }
         }
 
         [Authorize]

@@ -1,4 +1,4 @@
-﻿using deskgeek.Application.Commands;
+using deskgeek.Application.Commands;
 using deskgeek.Application.DTOs;
 using deskgeek.Application.Queries;
 using deskgeek.Application.Services;
@@ -50,6 +50,32 @@ namespace deskgeek.Presentation
             return Unauthorized();
         }
 
+        [Authorize]
+        [HttpPut("ordem")]
+        public async Task<IActionResult> SalvarOrdem([FromBody] SaveLibraryOrderCommand command)
+        {
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)) return Unauthorized();
+            command.UserId = userId;
+            try { return Ok(new { ordem = await _mediator.Send(command) }); }
+            catch (ValidationException exception) { return BadRequest(new { message = exception.Errors.FirstOrDefault()?.ErrorMessage ?? exception.Message }); }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException) { return Conflict(new { message = "A biblioteca mudou durante a organização. Atualize e tente novamente." }); }
+        }
+
+        [Authorize]
+        [HttpPut("{id:guid}/notificacoes")]
+        public async Task<IActionResult> AtualizarNotificacoes(Guid id, [FromBody] UpdateMediaEmailsCommand command)
+        {
+            if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)) return Unauthorized();
+            command.MediaId = id;
+            command.UserId = userId;
+            try
+            {
+                var enabled = await _mediator.Send(command);
+                return enabled.HasValue ? Ok(new { notificarLancamentos = enabled.Value }) : NotFound(new { message = "Mídia não encontrada para o usuário autenticado." });
+            }
+            catch (ValidationException exception) { return BadRequest(new { message = exception.Errors.First().ErrorMessage }); }
+        }
+
         [HttpGet("{id:guid}")]
         [Authorize]
         public async Task<IActionResult> ObterMediaDetalhePorId(Guid id)
@@ -74,8 +100,10 @@ namespace deskgeek.Presentation
             var detalhe = new MediaDexDetalheEdicaoDto
             {
                 Id = media.Id,
+                OrdemPersonalizada = media.OrdemPersonalizada,
                 Nome = media.Nome,
                 TipoMidia = media.TipoMidia,
+                NotificarLancamentos = media.NotificarLancamentos,
                 Status = media.Status,
                 DiaNovoCapitulo = media.DiaNovoCapitulo,
                 TotalCapitulos = media.TotalCapitulos,
@@ -275,6 +303,12 @@ namespace deskgeek.Presentation
             if (Request.HasFormContentType)
             {
                 var form = await Request.ReadFormAsync();
+                bool? notificar = null;
+                if (form.ContainsKey("notificarLancamentos"))
+                {
+                    if (!bool.TryParse(form["notificarLancamentos"], out var value)) return BadRequest(new { message = "Preferência de e-mail inválida." });
+                    notificar = value;
+                }
                 var imagemUrl = form["imagemUrl"].ToString();
                 if (string.IsNullOrWhiteSpace(imagemUrl))
                 {
@@ -283,6 +317,7 @@ namespace deskgeek.Presentation
 
                 command = new EditMediaCommand
                 {
+                    NotificarLancamentos = notificar,
                     Nome = form["nome"].ToString(),
                     TotalCapitulos = form["totalCapitulos"].ToString(),
                     CapituloAtual = form["capituloAtual"].ToString(),
@@ -291,7 +326,7 @@ namespace deskgeek.Presentation
                     TipoMidia = form["tipoMidia"].ToString(),
                     ImagemUpload = form.Files.GetFile("ImagemUpload"),
                     ImagemDirectory = form["imagemDirectory"].ToString(),
-                    imagemUrl = string.IsNullOrWhiteSpace(imagemUrl) ? null : imagemUrl,
+                    imagemUrl = form.ContainsKey("imagemUrl") || form.ContainsKey("setUrlInput") ? imagemUrl : null,
                     UrlMidia = form["urlMidia"].ToString()
                 };
             }

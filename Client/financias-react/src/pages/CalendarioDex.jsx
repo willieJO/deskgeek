@@ -1,21 +1,26 @@
+import { mediaImageSource } from "../utils/mediaImages";
+import MediaCover from "../components/MediaCover";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import { useSearchParams } from "react-router-dom";
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, TextField } from "@mui/material";
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  MenuItem,
+  TextField,
+} from "@mui/material";
 import { toast } from "react-toastify";
 import api from "../utils/api";
 import ButtonSpinner from "../components/ButtonSpinner";
 import HoverMediaPreview from "../components/HoverMediaPreview";
 import { useHoverMediaPreview } from "../components/useHoverMediaPreview";
 import "./calendario.css";
-
-const baseURL =
-  import.meta.env.MODE === "production"
-    ? import.meta.env.VITE_PRODUCAO
-    : import.meta.env.VITE_LOCALHOST;
 
 const diaSemanaMap = {
   domingo: 0,
@@ -26,7 +31,7 @@ const diaSemanaMap = {
   "quinta-feira": 4,
   "sexta-feira": 5,
   sabado: 6,
-  "sábado": 6,
+  sábado: 6,
 };
 
 const diasPorIndice = [
@@ -41,35 +46,6 @@ const diasPorIndice = [
 
 const minimoBuscaUsuario = 2;
 const statusMidiaOpcoes = ["Em andamento", "Finalizado", "Inativo"];
-const calendarioDialogTextFieldSx = {
-  "& .MuiInputLabel-root": {
-    color: "rgba(203,213,225,0.9)",
-  },
-  "& .MuiInputLabel-root.Mui-focused": {
-    color: "#67e8f9",
-  },
-  "& .MuiOutlinedInput-root": {
-    color: "#e2edff",
-    backgroundColor: "rgba(10,19,37,0.88)",
-    "& fieldset": {
-      borderColor: "rgba(148,163,184,0.32)",
-    },
-    "&:hover fieldset": {
-      borderColor: "rgba(103,232,249,0.45)",
-    },
-    "&.Mui-focused fieldset": {
-      borderColor: "rgba(103,232,249,0.75)",
-    },
-  },
-  "& .MuiInputBase-input::placeholder": {
-    color: "rgba(148,163,184,0.85)",
-    opacity: 1,
-  },
-  "& .MuiSvgIcon-root": {
-    color: "#cbd5e1",
-  },
-};
-
 function parseNonNegativeInteger(value) {
   if (value === null || value === undefined || String(value).trim() === "") {
     return null;
@@ -119,14 +95,16 @@ function UsuarioAvatar({
 
   const inicial = (usuario || "U").trim().slice(0, 1).toUpperCase();
   const fotoUrl =
-    userId && fotoPerfilDisponivel ? api.getUri({ url: `/usuario/foto/${userId}` }) : null;
+    userId && fotoPerfilDisponivel
+      ? api.getUri({ url: `/usuario/foto/${userId}` })
+      : null;
 
   if (fotoUrl && !erroImagem) {
     return (
       <img
         src={fotoUrl}
         alt={`Foto de perfil de ${usuario || "usuário"}`}
-        className={`${sizeClass} rounded-full border border-cyan-300/35 object-cover`}
+        className={`${sizeClass} rounded-full border border-violet-300/35 object-cover`}
         onError={() => setErroImagem(true)}
       />
     );
@@ -134,7 +112,7 @@ function UsuarioAvatar({
 
   return (
     <div
-      className={`${sizeClass} flex items-center justify-center rounded-full border border-cyan-300/35 bg-cyan-300/10 font-bold text-cyan-100 ${textClass}`}
+      className={`${sizeClass} flex items-center justify-center rounded-full border border-violet-300/35 bg-violet-300/10 font-bold text-violet-100 ${textClass}`}
       aria-label={`Avatar de ${usuario || "usuário"}`}
     >
       {inicial || "U"}
@@ -149,7 +127,8 @@ export default function CalendarioDex({ currentUser }) {
   const usuarioSelecionadoNormalizado = normalizarUsuario(usuarioSelecionado);
   const usuarioLogadoNormalizado = normalizarUsuario(usuarioLogado);
   const visualizandoTerceiro =
-    Boolean(usuarioSelecionado) && usuarioSelecionadoNormalizado !== usuarioLogadoNormalizado;
+    Boolean(usuarioSelecionado) &&
+    usuarioSelecionadoNormalizado !== usuarioLogadoNormalizado;
   const usuarioConsulta = visualizandoTerceiro ? usuarioSelecionado : "";
 
   const [eventos, setEventos] = useState([]);
@@ -166,7 +145,30 @@ export default function CalendarioDex({ currentUser }) {
   const [savingEdit, setSavingEdit] = useState(false);
   const [editError, setEditError] = useState("");
   const cacheBuscaUsuarios = useRef(new Map());
-  const { preview, cardRef, clearPreview, getTriggerProps } = useHoverMediaPreview();
+  const calendarRef = useRef(null);
+  const calendarContainerRef = useRef(null);
+
+  // FullCalendar also needs to resize when the sidebar changes the available width.
+  useEffect(() => {
+    let previousWidth = 0;
+    let frame;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect.width;
+      if (Math.abs(width - previousWidth) < 1) return;
+      previousWidth = width;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() =>
+        calendarRef.current?.getApi().updateSize(),
+      );
+    });
+    observer.observe(calendarContainerRef.current);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+  const { preview, cardRef, clearPreview, getTriggerProps } =
+    useHoverMediaPreview();
 
   useEffect(() => {
     cacheBuscaUsuarios.current.clear();
@@ -200,30 +202,30 @@ export default function CalendarioDex({ currentUser }) {
     setLoading(true);
     try {
       const response = usuarioConsulta
-        ? await api.get("/MediaDex/obterMediaPorUsuarioPorStatusEmAndamentoPorUsuario", {
-            params: { usuario: usuarioConsulta },
-            withCredentials: true,
-          })
+        ? await api.get(
+            "/MediaDex/obterMediaPorUsuarioPorStatusEmAndamentoPorUsuario",
+            {
+              params: { usuario: usuarioConsulta },
+              withCredentials: true,
+            },
+          )
         : await api.get("/MediaDex/obterMediaPorUsuarioPorStatusEmAndamento", {
             withCredentials: true,
           });
 
       const lista = Array.isArray(response.data) ? response.data : [];
       const data = lista.filter(
-        (item) => item.status === "Em andamento" && item.diaNovoCapitulo != null
+        (item) =>
+          item.status === "Em andamento" && item.diaNovoCapitulo != null,
       );
 
       const eventosFullCalendar = data.map((item) => {
         const dayIndex = diaSemanaMap[item.diaNovoCapitulo?.toLowerCase()] ?? 4;
-        const startRecur = item.dataInicioRecorrencia || new Date().toISOString().slice(0, 10);
+        const startRecur =
+          item.dataInicioRecorrencia || new Date().toISOString().slice(0, 10);
         const endRecur = item.dataFimRecorrenciaExclusiva || undefined;
 
-        let urlImagem = "https://placehold.co/50x70?text=No+Image&font=roboto";
-        if (item.imagemDirectory) {
-          urlImagem = `${baseURL}/MediaDex/imagem/${item.imagemDirectory}`;
-        } else if (item.imagemUrl) {
-          urlImagem = item.imagemUrl;
-        }
+        const urlImagem = mediaImageSource(item);
 
         return {
           id: item.id,
@@ -245,7 +247,10 @@ export default function CalendarioDex({ currentUser }) {
       setEventos(eventosFullCalendar);
     } catch (error) {
       const mensagemApi = error?.response?.data?.message;
-      setMensagemFiltro(mensagemApi || "Não foi possível carregar o calendário para este usuário.");
+      setMensagemFiltro(
+        mensagemApi ||
+          "Não foi possível carregar o calendário para este usuário.",
+      );
       setEventos([]);
     } finally {
       setLoading(false);
@@ -277,7 +282,9 @@ export default function CalendarioDex({ currentUser }) {
           ? response.data.map(normalizarUsuarioResumo)
           : [];
         const usuarioEncontrado = resultados.find(
-          (item) => normalizarUsuario(item.usuario) === normalizarUsuario(usuarioConsulta)
+          (item) =>
+            normalizarUsuario(item.usuario) ===
+            normalizarUsuario(usuarioConsulta),
         );
 
         if (usuarioEncontrado) {
@@ -337,7 +344,8 @@ export default function CalendarioDex({ currentUser }) {
             : [];
 
           const resultadosSemUsuarioLogado = resultados.filter(
-            (item) => normalizarUsuario(item.usuario) !== usuarioLogadoNormalizado
+            (item) =>
+              normalizarUsuario(item.usuario) !== usuarioLogadoNormalizado,
           );
 
           cacheBuscaUsuarios.current.set(cacheKey, resultadosSemUsuarioLogado);
@@ -431,14 +439,18 @@ export default function CalendarioDex({ currentUser }) {
     if (!mediaId) return;
 
     if (visualizandoTerceiro) {
-      toast.info("Modo somente leitura: você só pode editar o próprio calendário.");
+      toast.info(
+        "Modo somente leitura: você só pode editar o próprio calendário.",
+      );
       return;
     }
 
     setLoadingEditDetails(true);
     setEditError("");
     try {
-      const response = await api.get(`/MediaDex/${mediaId}`, { withCredentials: true });
+      const response = await api.get(`/MediaDex/${mediaId}`, {
+        withCredentials: true,
+      });
       const detalhe = response?.data;
       if (!detalhe?.id) {
         toast.error("Não foi possível carregar os detalhes da mídia.");
@@ -475,7 +487,8 @@ export default function CalendarioDex({ currentUser }) {
       if (!anterior) return anterior;
 
       const total = parseNonNegativeInteger(anterior.totalCapitulos);
-      const capituloAtual = total !== null ? String(total) : anterior.capituloAtual;
+      const capituloAtual =
+        total !== null ? String(total) : anterior.capituloAtual;
 
       return {
         ...anterior,
@@ -562,7 +575,9 @@ export default function CalendarioDex({ currentUser }) {
             : String(editingMedia.urlMidia).trim(),
       };
 
-      await api.put(`/MediaDex/${editingMedia.id}`, payload, { withCredentials: true });
+      await api.put(`/MediaDex/${editingMedia.id}`, payload, {
+        withCredentials: true,
+      });
 
       toast.success("Mídia atualizada com sucesso.");
       setOpenEditModal(false);
@@ -578,7 +593,10 @@ export default function CalendarioDex({ currentUser }) {
         return;
       }
 
-      if (Array.isArray(error?.response?.data) && error.response.data[0]?.message) {
+      if (
+        Array.isArray(error?.response?.data) &&
+        error.response.data[0]?.message
+      ) {
         setEditError(error.response.data[0].message);
       } else {
         setEditError(apiMessage || "Erro ao salvar alterações.");
@@ -594,10 +612,12 @@ export default function CalendarioDex({ currentUser }) {
       {...getTriggerProps({
         title: eventInfo.event.title,
         image: eventInfo.event.extendedProps.imagem,
-        meta: diasPorIndice[eventInfo.event.extendedProps.dayIndex] || "Sem dia definido",
+        meta:
+          diasPorIndice[eventInfo.event.extendedProps.dayIndex] ||
+          "Sem dia definido",
       })}
     >
-      <img
+      <MediaCover
         src={eventInfo.event.extendedProps.imagem}
         alt={eventInfo.event.title}
         className="cal-event-image"
@@ -614,25 +634,36 @@ export default function CalendarioDex({ currentUser }) {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5">
-      <section className="page-surface fade-slide-in p-5 sm:p-7">
+      <section className="calendar-heading fade-slide-in">
         <p className="section-tag">Lançamentos</p>
         <h1 className="section-title">Calendário de obras</h1>
         <p className="section-subtitle">
           Veja rapidamente em quais dias cada capítulo novo costuma sair.
         </p>
 
-        <form onSubmit={handleFiltrarCalendario} className="mt-4 space-y-3">
-          <label className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-300">
+        <form
+          onSubmit={handleFiltrarCalendario}
+          className="page-surface mt-6 p-5 space-y-3"
+        >
+          <label
+            htmlFor="calendar-user-search"
+            className="block text-xs font-semibold uppercase tracking-[0.15em] text-slate-300"
+          >
             Visualizar calendário de outro usuário
           </label>
           <div className="flex flex-col gap-2 sm:flex-row">
             <input
+              id="calendar-user-search"
               value={filtroUsuario}
               onChange={(event) => setFiltroUsuario(event.target.value)}
               placeholder="Digite o usuário"
-              className="w-full rounded-xl border border-slate-600 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-cyan-300 focus:outline-none"
+              className="w-full rounded-xl border border-slate-600 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-violet-300 focus:outline-none"
             />
-            <button type="submit" className="ui-button w-full sm:w-auto" disabled={loading}>
+            <button
+              type="submit"
+              className="ui-button w-full sm:w-auto"
+              disabled={loading}
+            >
               {loading && acaoCarregamento === "usuario" ? (
                 <>
                   <ButtonSpinner />
@@ -687,14 +718,18 @@ export default function CalendarioDex({ currentUser }) {
                       usuario={item.usuario}
                       fotoPerfilDisponivel={item.fotoPerfilDisponivel}
                     />
-                    <span className="cal-user-search-name">@{item.usuario}</span>
+                    <span className="cal-user-search-name">
+                      @{item.usuario}
+                    </span>
                   </button>
                 </li>
               ))}
             </ul>
           )}
 
-          {mensagemFiltro && <p className="text-sm text-amber-300">{mensagemFiltro}</p>}
+          {mensagemFiltro && (
+            <p className="text-sm text-amber-300">{mensagemFiltro}</p>
+          )}
         </form>
       </section>
 
@@ -718,36 +753,70 @@ export default function CalendarioDex({ currentUser }) {
               </p>
             </div>
           </div>
-          <button type="button" onClick={handleVerMeuCalendario} className="ui-button-secondary">
+          <button
+            type="button"
+            onClick={handleVerMeuCalendario}
+            className="ui-button-secondary"
+          >
             Voltar para meu calendário
           </button>
         </section>
       )}
 
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="calendar-stats grid gap-4 sm:grid-cols-3">
         <article className="page-surface p-4">
-          <p className="text-xs uppercase tracking-[0.15em] text-slate-400">Total ativo</p>
-          <p className="mt-2 text-3xl font-extrabold text-cyan-200">{eventos.length}</p>
-          <p className="mt-1 text-sm text-slate-300">obras com dia de lançamento definido</p>
+          <p className="text-xs uppercase tracking-[0.15em] text-slate-400">
+            Total ativo
+          </p>
+          <p className="mt-2 text-3xl font-extrabold text-violet-200">
+            {eventos.length}
+          </p>
+          <p className="mt-1 text-sm text-slate-300">
+            obras com dia de lançamento definido
+          </p>
         </article>
 
         <article className="page-surface p-4">
-          <p className="text-xs uppercase tracking-[0.15em] text-slate-400">Dia mais cheio</p>
-          <p className="mt-2 text-2xl font-bold text-slate-100">{diaMaisCheio}</p>
-          <p className="mt-1 text-sm text-slate-300">maior concentração de novidades</p>
+          <p className="text-xs uppercase tracking-[0.15em] text-slate-400">
+            Dia mais cheio
+          </p>
+          <p className="mt-2 text-2xl font-bold text-slate-100">
+            {diaMaisCheio}
+          </p>
+          <p className="mt-1 text-sm text-slate-300">
+            maior concentração de novidades
+          </p>
         </article>
 
         <article className="page-surface p-4">
-          <p className="text-xs uppercase tracking-[0.15em] text-slate-400">Visão mensal</p>
+          <p className="text-xs uppercase tracking-[0.15em] text-slate-400">
+            Visão mensal
+          </p>
           <p className="mt-2 text-2xl font-bold text-slate-100">
             {loading ? "Carregando..." : "Atualizado"}
           </p>
-          <p className="mt-1 text-sm text-slate-300">arraste para navegar entre meses</p>
+          <p className="mt-1 text-sm text-slate-300">
+            use as setas para navegar entre meses
+          </p>
         </article>
       </section>
 
-      <section className="page-surface p-3 sm:p-5">
+      <section className="page-surface p-3 sm:p-5" ref={calendarContainerRef}>
         <FullCalendar
+          ref={calendarRef}
+          customButtons={{
+            previousMonth: {
+              text: "Anterior",
+              hint: "Mês anterior",
+              click: () => calendarRef.current?.getApi().prev(),
+            },
+            nextMonth: {
+              text: "Próximo",
+              hint: "Próximo mês",
+              click: () => calendarRef.current?.getApi().next(),
+            },
+          }}
+          moreLinkDidMount={({ el }) => el.setAttribute("role", "button")}
           plugins={[dayGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           events={eventos}
@@ -756,7 +825,7 @@ export default function CalendarioDex({ currentUser }) {
           height="auto"
           contentHeight="auto"
           headerToolbar={{
-            start: "prev,next today",
+            start: "previousMonth,nextMonth today",
             center: "title",
             end: "",
           }}
@@ -768,55 +837,50 @@ export default function CalendarioDex({ currentUser }) {
       <Dialog
         open={openEditModal}
         onClose={(_, reason) => {
-          if (savingEdit && (reason === "backdropClick" || reason === "escapeKeyDown")) return;
+          if (
+            savingEdit &&
+            (reason === "backdropClick" || reason === "escapeKeyDown")
+          )
+            return;
           handleCloseEditModal();
         }}
         maxWidth="sm"
         fullWidth
-        PaperProps={{
-          sx: {
-            border: "1px solid rgba(103,232,249,0.35)",
-            background: "linear-gradient(160deg,#0e1930,#0a1326)",
-          },
-        }}
+        aria-labelledby="calendar-edit-title"
       >
-        <DialogTitle sx={{ fontWeight: 700, color: "#e2edff" }}>Editar mídia pelo calendário</DialogTitle>
+        <DialogTitle id="calendar-edit-title">
+          Editar mídia pelo calendário
+        </DialogTitle>
         <DialogContent
           dividers
           sx={{
             display: "flex",
             flexDirection: "column",
             gap: 2,
-            borderColor: "rgba(148,163,184,0.22)",
-            color: "#e2edff",
           }}
         >
           <TextField
             label="Nome"
             value={editingMedia?.nome || ""}
             InputProps={{ readOnly: true }}
-            sx={calendarioDialogTextFieldSx}
             fullWidth
           />
           <TextField
             label="Tipo"
             value={editingMedia?.tipoMidia || "Não definido"}
             InputProps={{ readOnly: true }}
-            sx={calendarioDialogTextFieldSx}
             fullWidth
           />
           <TextField
             label="Total de capítulos"
             value={editingMedia?.totalCapitulos || "Não definido"}
             InputProps={{ readOnly: true }}
-            sx={calendarioDialogTextFieldSx}
             fullWidth
           />
           <TextField
             label="Dia de lançamento"
             value={editingMedia?.diaNovoCapitulo || "Não definido"}
             InputProps={{ readOnly: true }}
-            sx={calendarioDialogTextFieldSx}
             fullWidth
           />
 
@@ -850,15 +914,14 @@ export default function CalendarioDex({ currentUser }) {
                       ...anterior,
                       status: event.target.value,
                     }
-                  : anterior
+                  : anterior,
               )
             }
             disabled={savingEdit}
-            sx={calendarioDialogTextFieldSx}
             fullWidth
           >
             {statusMidiaOpcoes.map((status) => (
-              <MenuItem key={status} value={status} sx={{ color: "#e2edff" }}>
+              <MenuItem key={status} value={status}>
                 {status}
               </MenuItem>
             ))}
@@ -875,11 +938,10 @@ export default function CalendarioDex({ currentUser }) {
                       ...anterior,
                       capituloAtual: event.target.value,
                     }
-                  : anterior
+                  : anterior,
               )
             }
             disabled={savingEdit}
-            sx={calendarioDialogTextFieldSx}
             fullWidth
           />
 
@@ -895,26 +957,32 @@ export default function CalendarioDex({ currentUser }) {
                       ...anterior,
                       urlMidia: event.target.value,
                     }
-                  : anterior
+                  : anterior,
               )
             }
             disabled={savingEdit}
-            sx={calendarioDialogTextFieldSx}
             fullWidth
           />
 
-          {editError ? <p className="text-sm text-rose-300">{editError}</p> : null}
+          {editError ? (
+            <p className="text-sm text-rose-300">{editError}</p>
+          ) : null}
         </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2, borderTop: "1px solid rgba(148,163,184,0.18)" }}>
+        <DialogActions
+          sx={{ px: 3, py: 2, borderTop: "1px solid rgba(148,163,184,0.18)" }}
+        >
           <Button
             onClick={handleCloseEditModal}
             color="inherit"
             disabled={savingEdit}
-            sx={{ color: "#cbd5e1" }}
           >
             Cancelar
           </Button>
-          <Button onClick={handleSalvarEdicao} variant="contained" disabled={savingEdit}>
+          <Button
+            onClick={handleSalvarEdicao}
+            variant="contained"
+            disabled={savingEdit}
+          >
             {savingEdit ? (
               <>
                 <ButtonSpinner />
